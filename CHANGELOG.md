@@ -11,6 +11,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.3] — 2026-02-15
+
+### Added
+- Update checker
+- Quick-add buttons
+- CAB report generation
+
+---
+
 ## [0.1.2] — 2026-02-15
 
 ### Added
