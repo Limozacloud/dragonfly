@@ -11,6 +11,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.1] — 2026-02-15
+
+### Added
+- Database backup and restore
+- Trash / soft-delete
+- 6 additional UI languages
+- Linux builds (.deb, .rpm, .AppImage)
+
+---
+
 ## [0.1.0] — 2026-02-14
 
 ### Added
