@@ -11,6 +11,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.2] — 2026-02-15
+
+### Added
+- Task search field
+- Database backup management
+
+### Changed
+- CI build improvements
+
+---
+
 ## [0.1.1] — 2026-02-15
 
 ### Added
