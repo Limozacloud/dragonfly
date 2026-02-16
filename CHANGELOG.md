@@ -11,6 +11,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.4] — 2026-02-16
+
+### Added
+- Collapsible sidebar
+- Collapsible Kanban columns
+
+---
+
 ## [0.1.3] — 2026-02-15
 
 ### Added
