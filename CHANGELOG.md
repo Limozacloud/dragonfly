@@ -11,6 +11,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.5] — 2026-02-19
+
+### Added
+- Multi-project support
+- Table of contents in the notes editor
+- Customizable AI prompts
+
+---
+
 ## [0.1.4] — 2026-02-16
 
 ### Added
