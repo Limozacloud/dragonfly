@@ -11,6 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.7] — 2026-02-20
+
+### Added
+- Scratchpad with Excalidraw drawing canvas
+
+---
+
 ## [0.1.6] — 2026-02-20
 
 ### Added
