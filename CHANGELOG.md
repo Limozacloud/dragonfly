@@ -11,6 +11,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.6] — 2026-02-20
+
+### Added
+- `dragonfly://` space URL protocol
+- Schema versioning for the local database
+
+---
+
 ## [0.1.5] — 2026-02-19
 
 ### Added
