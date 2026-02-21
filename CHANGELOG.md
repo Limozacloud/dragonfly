@@ -11,6 +11,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.11] — 2026-02-21
+
+### Added
+- Resizable sidebar
+- Batch-move for features
+
+### Changed
+- Dependency upgrades
+
+---
+
 ## [0.1.10] — 2026-02-21
 
 ### Added
