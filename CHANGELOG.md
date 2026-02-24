@@ -11,6 +11,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.12] — 2026-02-24
+
+### Added
+- Personal reminders with due date and recurrence
+- Email notifications for reminders
+- Tray integration for reminders
+
+---
+
 ## [0.1.11] — 2026-02-21
 
 ### Added
