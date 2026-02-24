@@ -11,6 +11,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.13] — 2026-02-24
+
+### Added
+- Code syntax highlighting in the editor
+- Mermaid diagram support in the notes editor
+
+---
+
 ## [0.1.12] — 2026-02-24
 
 ### Added
