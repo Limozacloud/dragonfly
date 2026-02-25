@@ -11,6 +11,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.15] — 2026-02-25
+
+### Added
+- Markdown paste conversion
+- Anchor links in the editor
+
+### Changed
+- Improved editor typography
+
+---
+
 ## [0.1.14] — 2026-02-25
 
 ### Fixed
