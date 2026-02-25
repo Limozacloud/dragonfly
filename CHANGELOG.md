@@ -11,6 +11,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.14] — 2026-02-25
+
+### Fixed
+- Attachment path resolution
+
+### Added
+- Single-instance enforcement (second launch focuses existing window)
+- Autostart with `--hidden` flag (starts minimized to tray)
+
+---
+
 ## [0.1.13] — 2026-02-24
 
 ### Added
