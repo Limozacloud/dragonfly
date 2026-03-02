@@ -11,6 +11,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.16] — 2026-03-02
+
+### Added
+- Voice input for notes (Live / OpenAI / Local Whisper)
+- Minimize-to-tray toggle
+
+### Changed
+- Improved language support
+
+---
+
 ## [0.1.15] — 2026-02-25
 
 ### Added
