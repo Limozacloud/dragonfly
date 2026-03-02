@@ -11,6 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [Unreleased]
 
 ---
+## [0.1.17] — 2026-03-02
+
+### Fixed
+- Images and file attachments not loading in installed (bundled) builds
+
+---
+
 ## [0.1.16] — 2026-03-02
 
 ### Added
