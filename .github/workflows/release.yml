@@ -110,13 +110,13 @@ jobs:
       contents: write
     steps:
       - name: Download Windows files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dragonfly-windows
           path: release-files
 
       - name: Download Linux files
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dragonfly-linux
           path: release-files
