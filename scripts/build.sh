@@ -27,6 +27,12 @@ echo -e "\n${CYAN}=== DragonFly – Release Build (Linux) ===${NC}"
 VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
 echo -e "Version: $VERSION\n"
 
+# ── Source env from setup (nvm / cargo) ──────────────────────────────────────
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1091
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+
 # ── Preflight checks ──────────────────────────────────────────────────────────
 MISSING=()
 command -v node  &>/dev/null || MISSING+=("node")
@@ -41,9 +47,6 @@ fi
 
 echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
 echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
-
-# ── Source cargo env ──────────────────────────────────────────────────────────
-[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
 # ── LIBCLANG_PATH ─────────────────────────────────────────────────────────────
 if [[ -z "$LIBCLANG_PATH" ]]; then

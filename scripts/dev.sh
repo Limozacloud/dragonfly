@@ -13,6 +13,12 @@ NC='\033[0m'
 
 echo -e "\n${CYAN}=== DragonFly – Dev Setup ===${NC}"
 
+# ── Source env from setup (nvm / cargo) ──────────────────────────────────────
+export NVM_DIR="$HOME/.nvm"
+# shellcheck disable=SC1091
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+
 # ── Preflight checks ──────────────────────────────────────────────────────────
 MISSING=()
 command -v node  &>/dev/null || MISSING+=("node")
@@ -27,9 +33,6 @@ fi
 
 echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
 echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
-
-# ── Source cargo env ──────────────────────────────────────────────────────────
-[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
 # ── LIBCLANG_PATH (Linux) ─────────────────────────────────────────────────────
 if [[ "$(uname -s)" == "Linux" && -z "$LIBCLANG_PATH" ]]; then
