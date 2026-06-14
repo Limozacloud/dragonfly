@@ -47,7 +47,7 @@ jobs:
           done
 
       - name: Upload release files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dragonfly-windows
           path: staging/*
@@ -98,7 +98,7 @@ jobs:
           cp src-tauri/target/release/bundle/appimage/*.AppImage staging/
 
       - name: Upload release files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dragonfly-linux
           path: staging/*
