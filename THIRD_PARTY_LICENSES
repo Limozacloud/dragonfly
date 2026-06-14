@@ -1,0 +1,107 @@
+THIRD-PARTY SOFTWARE LICENSES
+==============================
+
+DragonFly uses the following open-source libraries and frameworks.
+This file lists the major dependencies and their respective licenses.
+
+
+MIT License
+-----------
+The following packages are licensed under the MIT License
+(https://opensource.org/licenses/MIT):
+
+- React (https://github.com/facebook/react)
+- React DOM (https://github.com/facebook/react)
+- Vite (https://github.com/vitejs/vite)
+- Zustand (https://github.com/pmndrs/zustand)
+- Tailwind CSS (https://github.com/tailwindlabs/tailwindcss)
+- @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (https://github.com/clauderic/dnd-kit)
+- @tabler/icons-react (https://github.com/tabler/tabler-icons)
+- Radix UI Primitives (https://github.com/radix-ui/primitives)
+- i18next (https://github.com/i18next/i18next)
+- react-i18next (https://github.com/i18next/react-i18next)
+- clsx (https://github.com/lukeed/clsx)
+- tailwind-merge (https://github.com/dcastil/tailwind-merge)
+- PocketBase JS SDK (https://github.com/pocketbase/js-sdk)
+- Tiptap (https://github.com/ueberdosis/tiptap)
+- ProseMirror (https://github.com/prosemirror)
+- Yjs (https://github.com/yjs/yjs)
+- lucide-react (https://github.com/lucide-icons/lucide)
+- nanoid (https://github.com/ai/nanoid)
+- esbuild (https://github.com/evanw/esbuild)
+- rollup (https://github.com/rollup/rollup)
+- PostCSS (https://github.com/postcss/postcss)
+
+MIT License Text:
+
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the
+  "Software"), to deal in the Software without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, sublicense, and/or sell copies of the Software, and to
+  permit persons to whom the Software is furnished to do so, subject to
+  the following conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Apache License 2.0
+------------------
+The following packages are licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0):
+
+- Tauri (https://github.com/tauri-apps/tauri)
+- @tauri-apps/api (https://github.com/tauri-apps/tauri)
+- @tauri-apps/plugin-dialog (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-fs (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-shell (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-sql (https://github.com/tauri-apps/plugins-workspace)
+- class-variance-authority (https://github.com/joe-bell/cva)
+- serde, serde_json (https://github.com/serde-rs/serde)
+- chrono (https://github.com/chronotope/chrono)
+- TypeScript (https://github.com/microsoft/TypeScript)
+
+
+Mozilla Public License 2.0
+---------------------------
+The following packages are licensed under the MPL-2.0
+(https://www.mozilla.org/en-US/MPL/2.0/):
+
+- BlockNote - @blocknote/core, @blocknote/react, @blocknote/shadcn
+  (https://github.com/TypeCellOS/BlockNote)
+- LightningCSS (https://github.com/parcel-bundler/lightningcss)
+
+These packages are used as unmodified dependencies. Source code is
+available at the repositories linked above.
+
+
+Other Licenses
+--------------
+- tslib: 0BSD (https://github.com/Microsoft/tslib)
+- entities: BSD-2-Clause (https://github.com/fb55/entities)
+- source-map-js: BSD-3-Clause (https://github.com/nicolo-ribaudo/source-map-js)
+- caniuse-lite: CC-BY-4.0 (https://github.com/nicolo-ribaudo/caniuse-lite)
+- argparse: Python-2.0 (https://github.com/nodeca/argparse)
+
+
+Rust Dependencies (Backend)
+----------------------------
+- tauri: MIT/Apache-2.0 (https://github.com/tauri-apps/tauri)
+- tauri-plugin-dialog: MIT/Apache-2.0
+- tauri-plugin-fs: MIT/Apache-2.0
+- tauri-plugin-shell: MIT/Apache-2.0
+- tauri-plugin-sql: MIT/Apache-2.0
+- serde: MIT/Apache-2.0 (https://github.com/serde-rs/serde)
+- serde_json: MIT/Apache-2.0 (https://github.com/serde-rs/json)
+- zip: MIT (https://github.com/zip-rs/zip2)
+- walkdir: MIT/Unlicense (https://github.com/BurntSushi/walkdir)
+- chrono: MIT/Apache-2.0 (https://github.com/chronotope/chrono)

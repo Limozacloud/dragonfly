@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <!-- Main gradient for wings -->
+    <linearGradient id="wingGradL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00E5CC" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#00B4D8" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#7B61FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="wingGradR" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00E5CC" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#00B4D8" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#7B61FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00E5CC"/>
+      <stop offset="100%" stop-color="#0088A3"/>
+    </linearGradient>
+    <linearGradient id="wingShineL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="wingShineR" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glowCenter" cx="50%" cy="42%" r="50%">
+      <stop offset="0%" stop-color="#00E5CC" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#00E5CC" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="wingBlur">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="600" rx="80" fill="#0D1117"/>
+  
+  <!-- Subtle radial glow -->
+  <circle cx="300" cy="260" r="250" fill="url(#glowCenter)"/>
+
+  <!-- === LEFT UPPER WING === -->
+  <path d="M280 240 
+           C240 180, 160 120, 100 110 
+           C80 108, 60 115, 55 130 
+           C48 155, 70 190, 100 210 
+           C140 240, 210 250, 280 255Z" 
+        fill="url(#wingGradL)" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.4"/>
+  <!-- Wing vein -->
+  <path d="M275 245 C230 200, 160 150, 100 135" 
+        fill="none" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M270 250 C230 220, 170 195, 110 185" 
+        fill="none" stroke="#00E5CC" stroke-width="0.8" stroke-opacity="0.2"/>
+  <!-- Wing shine -->
+  <path d="M280 240 
+           C240 180, 160 120, 100 110 
+           C80 108, 60 115, 55 130 
+           C48 155, 70 190, 100 210 
+           C140 240, 210 250, 280 255Z" 
+        fill="url(#wingShineL)"/>
+
+  <!-- === RIGHT UPPER WING === -->
+  <path d="M320 240 
+           C360 180, 440 120, 500 110 
+           C520 108, 540 115, 545 130 
+           C552 155, 530 190, 500 210 
+           C460 240, 390 250, 320 255Z" 
+        fill="url(#wingGradR)" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.4"/>
+  <path d="M325 245 C370 200, 440 150, 500 135" 
+        fill="none" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M330 250 C370 220, 430 195, 490 185" 
+        fill="none" stroke="#00E5CC" stroke-width="0.8" stroke-opacity="0.2"/>
+  <path d="M320 240 
+           C360 180, 440 120, 500 110 
+           C520 108, 540 115, 545 130 
+           C552 155, 530 190, 500 210 
+           C460 240, 390 250, 320 255Z" 
+        fill="url(#wingShineR)"/>
+
+  <!-- === LEFT LOWER WING === -->
+  <path d="M278 265 
+           C230 280, 140 310, 95 340 
+           C78 352, 75 370, 85 382 
+           C100 398, 135 390, 165 370 
+           C210 340, 255 300, 282 275Z" 
+        fill="url(#wingGradL)" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.3" fill-opacity="0.8"/>
+  <path d="M275 268 C220 290, 150 330, 110 355" 
+        fill="none" stroke="#00E5CC" stroke-width="0.8" stroke-opacity="0.2"/>
+
+  <!-- === RIGHT LOWER WING === -->
+  <path d="M322 265 
+           C370 280, 460 310, 505 340 
+           C522 352, 525 370, 515 382 
+           C500 398, 465 390, 435 370 
+           C390 340, 345 300, 318 275Z" 
+        fill="url(#wingGradR)" stroke="#00E5CC" stroke-width="1" stroke-opacity="0.3" fill-opacity="0.8"/>
+  <path d="M325 268 C380 290, 450 330, 490 355" 
+        fill="none" stroke="#00E5CC" stroke-width="0.8" stroke-opacity="0.2"/>
+
+  <!-- === BODY === -->
+  <!-- Head -->
+  <ellipse cx="300" cy="230" rx="22" ry="20" fill="url(#bodyGrad)" filter="url(#softGlow)"/>
+  <!-- Eyes -->
+  <circle cx="288" cy="224" r="6" fill="#0D1117"/>
+  <circle cx="312" cy="224" r="6" fill="#0D1117"/>
+  <circle cx="290" cy="222" r="2.5" fill="#00FFD5"/>
+  <circle cx="314" cy="222" r="2.5" fill="#00FFD5"/>
+  
+  <!-- Thorax -->
+  <ellipse cx="300" cy="262" rx="16" ry="22" fill="url(#bodyGrad)"/>
+  
+  <!-- Abdomen / Tail segments -->
+  <ellipse cx="300" cy="300" rx="12" ry="16" fill="#009BAA"/>
+  <ellipse cx="300" cy="330" rx="10" ry="14" fill="#008899"/>
+  <ellipse cx="300" cy="358" rx="8.5" ry="13" fill="#007788"/>
+  <ellipse cx="300" cy="384" rx="7" ry="12" fill="#006677"/>
+  <ellipse cx="300" cy="408" rx="5.5" ry="11" fill="#005566"/>
+  <ellipse cx="300" cy="430" rx="4" ry="10" fill="#004455"/>
+  <ellipse cx="300" cy="450" rx="2.5" ry="8" fill="#003344"/>
+  
+  <!-- Body highlight -->
+  <ellipse cx="296" cy="262" rx="5" ry="14" fill="#ffffff" fill-opacity="0.12" transform="rotate(-5 296 262)"/>
+
+  <!-- === TEXT === -->
+  <text x="300" y="520" text-anchor="middle" font-family="'SF Pro Display', 'Segoe UI', 'Helvetica Neue', sans-serif" font-size="48" font-weight="700" letter-spacing="6" fill="#ffffff">DRAGONFLY</text>
+  <text x="300" y="548" text-anchor="middle" font-family="'SF Pro Display', 'Segoe UI', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="8" fill="#00E5CC" fill-opacity="0.7">TODOS · RELEASES · NOTES</text>
+</svg>

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/capability/2.0.0",
+  "identifier": "default",
+  "description": "Default capabilities for DragonFly",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "fs:default",
+      "allow": [
+        { "path": "$APPDATA/**" },
+        { "path": "$RESOURCE/**" },
+        { "path": "../data/**" }
+      ]
+    },
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "fs:allow-appdata-meta-recursive",
+    "fs:allow-mkdir",
+    "dialog:default",
+    "sql:default",
+    "sql:allow-execute",
+    "sql:allow-select",
+    "shell:default",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-destroy",
+    "core:window:allow-set-focus",
+    "core:window:allow-is-visible",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled"
+  ]
+}

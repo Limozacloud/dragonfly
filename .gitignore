@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-docker/
+src-tauri/target/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python venv (MkDocs)
+.venv/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Tauri
+src-tauri/WixTools/
+src-tauri/gen/schemas/
+
+# Release subproject (local only)
+dragonfly-release/
+
+# Demo / test data (not for public repo)
+demo-data.sql
+
+# Rust artifacts
+src-tauri/Cargo.lock.bak

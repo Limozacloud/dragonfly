@@ -1,0 +1,12 @@
+services:
+  pocketbase:
+    build: .
+    container_name: dragonfly-pb
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - pb_data:/pb/pb_data
+
+volumes:
+  pb_data:

@@ -1,0 +1,4 @@
+data/
+*.json
+!tauri.conf.json
+!capabilities/*.json

@@ -1,0 +1,35 @@
+site_name: DragonFly
+site_description: Privacy-first, offline-capable project management desktop app
+site_url: https://Limozacloud.github.io/dragonfly/
+repo_url: https://github.com/Limozacloud/dragonfly
+repo_name: Limozacloud/dragonfly
+edit_uri: edit/main/docs/
+
+theme:
+  name: readthedocs
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Building: building.md
+  - Architecture: architecture.md
+  - Project Structure: project-structure.md
+  - PocketBase Sync: pocketbase.md
+  - Sync & Reminders: reminder-sync.md
+  - Security Audit: security-audit.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - tables
+  - toc:
+      permalink: true
+
+docs_dir: docs

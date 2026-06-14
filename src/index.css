@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@source "../node_modules/@blocknote/shadcn";
+
+@theme {
+  --radius: 0.125rem;
+  --radius-sm: 0.0625rem;
+  --radius-md: 0.125rem;
+  --radius-lg: 0.25rem;
+
+  --color-primary: #0077B6;
+  --color-primary-foreground: #ffffff;
+  --color-primary-dark: #005f8f;
+
+  --color-background: #f1f5f9;
+  --color-foreground: #1e293b;
+  --color-card: #ffffff;
+  --color-card-foreground: #1e293b;
+
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #0077B6;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+
+  --color-sidebar-bg: #0D1117;
+  --color-sidebar-darker: #090c10;
+
+  --color-accent: #00B4D8;
+  --color-accent-foreground: #ffffff;
+
+  --color-secondary: #64748b;
+  --color-secondary-foreground: #ffffff;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1e293b;
+}

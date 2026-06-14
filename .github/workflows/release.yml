@@ -1,0 +1,133 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Collect release files
+        shell: bash
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          VER="${VERSION#v}"
+          mkdir -p staging
+          cp src-tauri/target/release/DragonFly.exe "staging/DragonFly_standalone_v${VER}_x64.exe"
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe staging/
+          for f in src-tauri/target/release/bundle/msi/*.msi; do
+            base=$(basename "$f" | sed "s/_en-US\.msi$/-setup.msi/")
+            cp "$f" "staging/$base"
+          done
+
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragonfly-windows
+          path: staging/*
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+            patchelf clang libclang-dev cmake
+
+      - name: Set LIBCLANG_PATH
+        run: |
+          LIBCLANG=$(find /usr/lib -name "libclang*.so*" 2>/dev/null | head -1)
+          echo "LIBCLANG_PATH=$(dirname $LIBCLANG)" >> $GITHUB_ENV
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      - name: Collect release files
+        run: |
+          mkdir -p staging
+          cp src-tauri/target/release/bundle/deb/*.deb staging/
+          cp src-tauri/target/release/bundle/rpm/*.rpm staging/ || true
+          cp src-tauri/target/release/bundle/appimage/*.AppImage staging/
+
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: dragonfly-linux
+          path: staging/*
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows files
+        uses: actions/download-artifact@v4
+        with:
+          name: dragonfly-windows
+          path: release-files
+
+      - name: Download Linux files
+        uses: actions/download-artifact@v4
+        with:
+          name: dragonfly-linux
+          path: release-files
+
+      - name: Attach files to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-files/*.exe
+            release-files/*.msi
+            release-files/*.deb
+            release-files/*.rpm
+            release-files/*.AppImage
+          token: ${{ secrets.RELEASE_TOKEN }}
