@@ -15,7 +15,7 @@ The following packages are licensed under the MIT License
 - Vite (https://github.com/vitejs/vite)
 - Zustand (https://github.com/pmndrs/zustand)
 - Tailwind CSS (https://github.com/tailwindlabs/tailwindcss)
-- @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities (https://github.com/clauderic/dnd-kit)
+- @dnd-kit/core (https://github.com/clauderic/dnd-kit)
 - @tabler/icons-react (https://github.com/tabler/tabler-icons)
 - Radix UI Primitives (https://github.com/radix-ui/primitives)
 - i18next (https://github.com/i18next/i18next)
@@ -23,14 +23,19 @@ The following packages are licensed under the MIT License
 - clsx (https://github.com/lukeed/clsx)
 - tailwind-merge (https://github.com/dcastil/tailwind-merge)
 - PocketBase JS SDK (https://github.com/pocketbase/js-sdk)
-- Tiptap (https://github.com/ueberdosis/tiptap)
-- ProseMirror (https://github.com/prosemirror)
-- Yjs (https://github.com/yjs/yjs)
 - lucide-react (https://github.com/lucide-icons/lucide)
 - nanoid (https://github.com/ai/nanoid)
 - esbuild (https://github.com/evanw/esbuild)
-- rollup (https://github.com/rollup/rollup)
 - PostCSS (https://github.com/postcss/postcss)
+- @excalidraw/excalidraw (https://github.com/excalidraw/excalidraw)
+- mermaid (https://github.com/mermaid-js/mermaid)
+- marked (https://github.com/markedjs/marked)
+- @tiptap/core (https://github.com/ueberdosis/tiptap)
+- yjs (https://github.com/yjs/yjs)
+- tokio (https://github.com/tokio-rs/tokio)
+- rusqlite (https://github.com/rusqlite/rusqlite)
+- lettre (https://github.com/lettre/lettre)
+- whisper.cpp (https://github.com/ggerganov/whisper.cpp)
 
 MIT License Text:
 
@@ -65,10 +70,17 @@ The following packages are licensed under the Apache License 2.0
 - @tauri-apps/plugin-fs (https://github.com/tauri-apps/plugins-workspace)
 - @tauri-apps/plugin-shell (https://github.com/tauri-apps/plugins-workspace)
 - @tauri-apps/plugin-sql (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-autostart (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-global-shortcut (https://github.com/tauri-apps/plugins-workspace)
+- @tauri-apps/plugin-single-instance (https://github.com/tauri-apps/plugins-workspace)
 - class-variance-authority (https://github.com/joe-bell/cva)
 - serde, serde_json (https://github.com/serde-rs/serde)
 - chrono (https://github.com/chronotope/chrono)
+- hound (https://github.com/ruuda/hound)
+- reqwest (https://github.com/seanmonstar/reqwest)
+- futures-util (https://github.com/rust-lang/futures-rs)
 - TypeScript (https://github.com/microsoft/TypeScript)
+- rollup (https://github.com/rollup/rollup)
 
 
 Mozilla Public License 2.0
@@ -76,12 +88,21 @@ Mozilla Public License 2.0
 The following packages are licensed under the MPL-2.0
 (https://www.mozilla.org/en-US/MPL/2.0/):
 
-- BlockNote - @blocknote/core, @blocknote/react, @blocknote/shadcn
+- BlockNote - @blocknote/core, @blocknote/react, @blocknote/shadcn, @blocknote/code-block
   (https://github.com/TypeCellOS/BlockNote)
 - LightningCSS (https://github.com/parcel-bundler/lightningcss)
 
 These packages are used as unmodified dependencies. Source code is
 available at the repositories linked above.
+
+
+The Unlicense
+-------------
+The following packages are released into the public domain under The Unlicense
+(https://unlicense.org/):
+
+- whisper-rs (https://github.com/tazz4843/whisper-rs)
+- walkdir (https://github.com/BurntSushi/walkdir)
 
 
 Other Licenses
@@ -91,17 +112,4 @@ Other Licenses
 - source-map-js: BSD-3-Clause (https://github.com/nicolo-ribaudo/source-map-js)
 - caniuse-lite: CC-BY-4.0 (https://github.com/nicolo-ribaudo/caniuse-lite)
 - argparse: Python-2.0 (https://github.com/nodeca/argparse)
-
-
-Rust Dependencies (Backend)
-----------------------------
-- tauri: MIT/Apache-2.0 (https://github.com/tauri-apps/tauri)
-- tauri-plugin-dialog: MIT/Apache-2.0
-- tauri-plugin-fs: MIT/Apache-2.0
-- tauri-plugin-shell: MIT/Apache-2.0
-- tauri-plugin-sql: MIT/Apache-2.0
-- serde: MIT/Apache-2.0 (https://github.com/serde-rs/serde)
-- serde_json: MIT/Apache-2.0 (https://github.com/serde-rs/json)
 - zip: MIT (https://github.com/zip-rs/zip2)
-- walkdir: MIT/Unlicense (https://github.com/BurntSushi/walkdir)
-- chrono: MIT/Apache-2.0 (https://github.com/chronotope/chrono)
