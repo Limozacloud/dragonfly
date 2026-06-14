@@ -234,7 +234,9 @@ pub async fn transcribe_audio(
         let n = state.full_n_segments();
         let mut text = String::new();
         for i in 0..n {
-            text.push_str(&state.get_segment(i).map_err(|e| e.to_string())?);
+            if let Some(seg) = state.get_segment(i) {
+                text.push_str(&seg);
+            }
         }
 
         Ok(text.trim().to_string())
