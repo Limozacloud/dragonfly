@@ -310,7 +310,13 @@
     "incorrect": "Parolă incorectă",
     "hint": "Setează o parolă pentru a-ți proteja datele. Va fi cerută la fiecare pornire.",
     "tooShort": "Parola trebuie să aibă cel puțin 8 caractere",
-    "noMatch": "Parolele nu se potrivesc"
+    "noMatch": "Parolele nu se potrivesc",
+    "changeSuccess": "Parola a fost schimbată cu succes",
+    "changeTitle": "Schimbă parola",
+    "currentPassphrase": "Parola curentă",
+    "confirmNew": "Confirmați parola nouă",
+    "currentIncorrect": "Parola curentă este incorectă",
+    "newPassphrase": "Parolă nouă"
   },
   "reminders": {
     "create": "Memento nou",
@@ -371,7 +377,7 @@
     "weekdaySun": "Du"
   },
   "layout": {
-    "collapseSidebar": "Restr\u00e2nge bara laterala",
+    "collapseSidebar": "Restrânge bara laterala",
     "expandSidebar": "Extinde bara laterala"
   },
   "project": {
@@ -462,7 +468,15 @@
     "restoreStep1": "Deschide interfata admin PocketBase (Settings > Backups)",
     "restoreStep2": "Incarca fisierul .zip de backup",
     "restoreStep3": "Apasa \"Restore\" pentru a restaura",
-    "backupHint": "Nume de fisier recomandat: pb_backup_schema_v{{version}}.zip — te ajuta sa identifici la ce versiune de schema apartine backup-ul."
+    "backupHint": "Nume de fisier recomandat: pb_backup_schema_v{{version}}.zip — te ajuta sa identifici la ce versiune de schema apartine backup-ul.",
+    "setupNewTitle": "Configurare inițială",
+    "pasteSpaceUrl": "Aveți un URL de spațiu?",
+    "spaceUrlParsed": "URL și cheie completate.",
+    "setupNewHint": "Configurați PocketBase pentru prima dată? Creați automat toate colecțiile necesare.",
+    "joinHint": "Introduceți URL-ul PocketBase și cheia spațiului furnizată de administratorul dvs.",
+    "parseAndFill": "Completați din URL",
+    "joinTitle": "Alătură-te unui spațiu",
+    "orEnterManually": "sau introduceți manual"
   },
   "schema": {
     "appTooOld": "Versiune aplicatie depasita",

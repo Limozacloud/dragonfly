@@ -310,7 +310,13 @@
     "incorrect": "Contraseña incorrecta",
     "hint": "Establece una contraseña para proteger tus datos. Se solicitará cada vez que se inicie la aplicación.",
     "tooShort": "La contraseña debe tener al menos 8 caracteres",
-    "noMatch": "Las contraseñas no coinciden"
+    "noMatch": "Las contraseñas no coinciden",
+    "changeSuccess": "Contraseña cambiada correctamente",
+    "changeTitle": "Cambiar contraseña",
+    "currentPassphrase": "Contraseña actual",
+    "confirmNew": "Confirmar nueva contraseña",
+    "currentIncorrect": "La contraseña actual es incorrecta",
+    "newPassphrase": "Nueva contraseña"
   },
   "reminders": {
     "create": "Nuevo recordatorio",
@@ -462,7 +468,15 @@
     "restoreStep1": "Abrir la interfaz de admin de PocketBase (Settings > Backups)",
     "restoreStep2": "Subir el archivo .zip de respaldo",
     "restoreStep3": "Hacer clic en \"Restore\" para restaurar",
-    "backupHint": "Nombre de archivo recomendado: pb_backup_schema_v{{version}}.zip — esto te ayuda a identificar a que version del esquema pertenece el respaldo."
+    "backupHint": "Nombre de archivo recomendado: pb_backup_schema_v{{version}}.zip — esto te ayuda a identificar a que version del esquema pertenece el respaldo.",
+    "setupNewTitle": "Configuración inicial",
+    "pasteSpaceUrl": "¿Tienes una URL de espacio?",
+    "spaceUrlParsed": "URL y clave rellenadas.",
+    "setupNewHint": "¿Configurando PocketBase por primera vez? Crea todas las colecciones necesarias automáticamente.",
+    "joinHint": "Introduce la URL de PocketBase y la clave de espacio proporcionada por tu administrador.",
+    "parseAndFill": "Rellenar desde URL",
+    "joinTitle": "Unirse a un espacio",
+    "orEnterManually": "o introducir manualmente"
   },
   "schema": {
     "appTooOld": "Version de la app desactualizada",

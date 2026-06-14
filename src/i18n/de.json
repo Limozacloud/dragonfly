@@ -310,7 +310,13 @@
     "incorrect": "Falsche Passphrase",
     "hint": "Lege eine Passphrase fest, um deine Daten zu schützen. Diese wird bei jedem Start abgefragt.",
     "tooShort": "Passphrase muss mindestens 8 Zeichen lang sein",
-    "noMatch": "Passphrasen stimmen nicht überein"
+    "noMatch": "Passphrasen stimmen nicht überein",
+    "changeSuccess": "Passphrase erfolgreich geändert",
+    "changeTitle": "Passphrase ändern",
+    "currentPassphrase": "Aktuelle Passphrase",
+    "confirmNew": "Neue Passphrase bestätigen",
+    "currentIncorrect": "Aktuelle Passphrase ist falsch",
+    "newPassphrase": "Neue Passphrase"
   },
   "reminders": {
     "create": "Neue Erinnerung",
@@ -462,7 +468,15 @@
     "restoreStep1": "PocketBase Admin-UI oeffnen (Settings > Backups)",
     "restoreStep2": "Die .zip-Backup-Datei hochladen",
     "restoreStep3": "\"Restore\" klicken, um zurueckzurollen",
-    "backupHint": "Empfohlener Dateiname: pb_backup_schema_v{{version}}.zip — so erkennst du, zu welcher Schema-Version das Backup gehoert."
+    "backupHint": "Empfohlener Dateiname: pb_backup_schema_v{{version}}.zip — so erkennst du, zu welcher Schema-Version das Backup gehoert.",
+    "setupNewTitle": "Ersteinrichtung",
+    "pasteSpaceUrl": "Space URL vorhanden?",
+    "spaceUrlParsed": "URL und Key wurden eingetragen.",
+    "setupNewHint": "PocketBase zum ersten Mal einrichten? Alle benötigten Collections werden automatisch erstellt.",
+    "joinHint": "Gib die PocketBase-URL und den Space Key ein, den dein Admin bereitgestellt hat.",
+    "parseAndFill": "Aus URL eintragen",
+    "joinTitle": "Space beitreten",
+    "orEnterManually": "oder manuell eingeben"
   },
   "schema": {
     "appTooOld": "App-Version veraltet",

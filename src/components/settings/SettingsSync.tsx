@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 import {
   IconCheck, IconCloud, IconCloudOff, IconRefresh, IconSettings,
   IconInfoCircle, IconAlertTriangle, IconCopy, IconLink,
-  IconLoader2, IconEye, IconEyeOff,
+  IconLoader2, IconEye, IconEyeOff, IconPlugConnected,
 } from '@tabler/icons-react';
 import { syncService } from '../../services/syncService';
 import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION } from '../../services/database';
-import { generateSpaceUrl } from '../../services/spaceUrl';
+import { generateSpaceUrl, parseSpaceUrl } from '../../services/spaceUrl';
 import { useProjectStore } from '@/stores/projectStore';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -28,6 +28,44 @@ function spaceKeyStrength(key: string): 'weak' | 'fair' | 'strong' {
   return 'weak';
 }
 
+function SpaceKeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+  if (value.trim().length === 0) return (
+    <Input
+      type="password"
+      placeholder={t('sync.spaceKeyPlaceholder')}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+  const strength = spaceKeyStrength(value.trim());
+  const bars = { weak: 1, fair: 2, strong: 3 }[strength];
+  const colors = { weak: 'bg-red-500', fair: 'bg-amber-400', strong: 'bg-green-500' };
+  const labels = {
+    weak: t('sync.spaceKeyStrengthWeak'),
+    fair: t('sync.spaceKeyStrengthFair'),
+    strong: t('sync.spaceKeyStrengthStrong'),
+  };
+  return (
+    <div className="space-y-2">
+      <Input
+        type="password"
+        placeholder={t('sync.spaceKeyPlaceholder')}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <div className="flex gap-1">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full ${i <= bars ? colors[strength] : 'bg-muted'}`} />
+        ))}
+      </div>
+      <p className={`text-xs ${strength === 'weak' ? 'text-red-500' : strength === 'fair' ? 'text-amber-500' : 'text-green-600'}`}>
+        {labels[strength]}
+      </p>
+    </div>
+  );
+}
+
 interface SettingsSyncProps {
   addLog: (msg: string) => void;
 }
@@ -38,6 +76,8 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
 
   const [spaceUrl, setSpaceUrl] = useState('');
   const [spaceKey, setSpaceKey] = useState('');
+  const [spaceUrlInput, setSpaceUrlInput] = useState('');
+  const [spaceUrlParsed, setSpaceUrlParsed] = useState(false);
   const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
   const [isSyncConnected, setIsSyncConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -45,14 +85,15 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [hasAdminCredentials, setHasAdminCredentials] = useState(false);
   const [displaySpaceUrl, setDisplaySpaceUrl] = useState('');
   const [spaceUrlCopied, setSpaceUrlCopied] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showDeleteAdminConfirm, setShowDeleteAdminConfirm] = useState(false);
   const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
   const [adminVerifyError, setAdminVerifyError] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   const [showSetup, setShowSetup] = useState(false);
   const [setupUrl, setSetupUrl] = useState('');
+  const [setupSpaceKey, setSetupSpaceKey] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isSettingUp, setIsSettingUp] = useState(false);
@@ -74,7 +115,10 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       const savedSpaceKey = project?.syncSpaceKey || '';
       if (savedUrl) setSpaceUrl(savedUrl);
       if (savedSpaceKey) setSpaceKey(savedSpaceKey);
-      if (savedUrl && savedSpaceKey) setHasSavedCredentials(true);
+      if (savedUrl && savedSpaceKey) {
+        setHasSavedCredentials(true);
+        setDisplaySpaceUrl(generateSpaceUrl(savedUrl, savedSpaceKey));
+      }
 
       const projId = useProjectStore.getState().currentProjectId;
       if (projId) {
@@ -86,23 +130,26 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         }
       }
 
-      if (savedUrl && savedSpaceKey) setDisplaySpaceUrl(generateSpaceUrl(savedUrl, savedSpaceKey));
-
       setIsSyncConnected(syncService.isConnected);
       if (syncService.isConnected && syncService.serverUrl) setSpaceUrl(syncService.serverUrl);
     })();
 
-    const interval = setInterval(() => {
-      setIsSyncConnected(syncService.isConnected);
-    }, 2000);
-
+    const interval = setInterval(() => setIsSyncConnected(syncService.isConnected), 2000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleParseSpaceUrl = () => {
+    const parsed = parseSpaceUrl(spaceUrlInput.trim());
+    if (parsed) {
+      setSpaceUrl(parsed.serverUrl);
+      setSpaceKey(parsed.spaceKey);
+      setSpaceUrlParsed(true);
+    }
+  };
 
   const handleConnect = async () => {
     if (!spaceUrl.trim() || !spaceKey.trim()) return;
     setIsSyncing(true);
-
     try {
       const projectId = useProjectStore.getState().currentProjectId;
       await syncService.connect(spaceUrl.trim(), spaceKey.trim(), projectId || undefined);
@@ -114,6 +161,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         });
       }
       setHasSavedCredentials(true);
+      setDisplaySpaceUrl(generateSpaceUrl(spaceUrl.trim(), spaceKey.trim()));
     } catch (error) {
       addLog('[ERR] ' + String(error));
     } finally {
@@ -122,16 +170,14 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   };
 
   const handleSetupServer = async () => {
-    if (!setupUrl.trim() || !adminEmail.trim() || !adminPassword.trim() || !spaceKey.trim()) return;
+    if (!setupUrl.trim() || !adminEmail.trim() || !adminPassword.trim() || spaceKeyStrength(setupSpaceKey.trim()) === 'weak') return;
     setIsSettingUp(true);
     setSetupStatus('');
-
     try {
       addLog('[...] Setting up server...');
-      await syncService.setupServer(setupUrl.trim(), adminEmail.trim(), adminPassword.trim(), spaceKey.trim());
+      await syncService.setupServer(setupUrl.trim(), adminEmail.trim(), adminPassword.trim(), setupSpaceKey.trim());
       addLog('[OK] ' + t('sync.setupSuccess'));
       setSetupStatus(t('sync.setupSuccess'));
-      setSpaceUrl(setupUrl.trim());
 
       const projId = useProjectStore.getState().currentProjectId;
       if (projId) await setProjectAdminCredentials(projId, adminEmail.trim(), adminPassword.trim());
@@ -140,19 +186,21 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       setTimeout(async () => {
         setShowSetup(false);
         setSetupStatus('');
+        setSpaceUrl(setupUrl.trim());
+        setSpaceKey(setupSpaceKey.trim());
         setIsSyncing(true);
         try {
           const projectId = useProjectStore.getState().currentProjectId;
-          await syncService.connect(setupUrl.trim(), spaceKey.trim(), projectId || undefined);
+          await syncService.connect(setupUrl.trim(), setupSpaceKey.trim(), projectId || undefined);
           setIsSyncConnected(true);
           if (projectId) {
             await useProjectStore.getState().updateProject(projectId, {
               syncUrl: setupUrl.trim(),
-              syncSpaceKey: spaceKey.trim(),
+              syncSpaceKey: setupSpaceKey.trim(),
             });
           }
           setHasSavedCredentials(true);
-          setDisplaySpaceUrl(generateSpaceUrl(setupUrl.trim(), spaceKey.trim()));
+          setDisplaySpaceUrl(generateSpaceUrl(setupUrl.trim(), setupSpaceKey.trim()));
         } catch (error) {
           addLog('[ERR] Connect: ' + String(error));
         } finally {
@@ -221,63 +269,91 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 space-y-3">
-          {/* === SETUP VIEW === */}
+
+        <CardContent className="p-4 space-y-4">
+          {/* ── NOT CONNECTED ── */}
           {syncView === 'setup' && (
             <>
-              <div>
-                <Label className="mb-2 block">{t('sync.spaceUrl')}</Label>
-                <Input
-                  placeholder="https://pb.example.com"
-                  value={spaceUrl}
-                  onChange={(e) => setSpaceUrl(e.target.value)}
-                  disabled={isSyncConnected}
-                />
-              </div>
-              <div>
-                <Label className="mb-2 block">{t('sync.spaceKey')}</Label>
-                <Input
-                  type="password"
-                  placeholder={t('sync.spaceKeyPlaceholder')}
-                  value={spaceKey}
-                  onChange={(e) => setSpaceKey(e.target.value)}
-                />
-                {spaceKey.trim().length > 0 && (() => {
-                  const strength = spaceKeyStrength(spaceKey.trim());
-                  const bars = { weak: 1, fair: 2, strong: 3 }[strength];
-                  const colors = { weak: 'bg-red-500', fair: 'bg-amber-400', strong: 'bg-green-500' };
-                  const labels = {
-                    weak: t('sync.spaceKeyStrengthWeak'),
-                    fair: t('sync.spaceKeyStrengthFair'),
-                    strong: t('sync.spaceKeyStrengthStrong'),
-                  };
-                  return (
-                    <div className="mt-2 space-y-1">
-                      <div className="flex gap-1">
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} className={`h-1 flex-1 rounded-full ${i <= bars ? colors[strength] : 'bg-muted'}`} />
-                        ))}
-                      </div>
-                      <p className={`text-xs ${strength === 'weak' ? 'text-red-500' : strength === 'fair' ? 'text-amber-500' : 'text-green-600'}`}>
-                        {labels[strength]}
-                      </p>
-                    </div>
-                  );
-                })()}
-              </div>
+              {/* Section 1: Join */}
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-1">{t('sync.joinTitle')}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{t('sync.joinHint')}</p>
+                </div>
 
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={handleConnect} disabled={isSyncing || !spaceUrl.trim() || spaceKeyStrength(spaceKey.trim()) === 'weak'}>
+                {/* Space URL paste shortcut */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="dragonfly://pb.example.com/…"
+                    value={spaceUrlInput}
+                    onChange={(e) => { setSpaceUrlInput(e.target.value); setSpaceUrlParsed(false); }}
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleParseSpaceUrl}
+                    disabled={!spaceUrlInput.trim()}
+                  >
+                    {t('sync.parseAndFill')}
+                  </Button>
+                </div>
+                {spaceUrlParsed && (
+                  <p className="text-xs text-green-600">{t('sync.spaceUrlParsed')}</p>
+                )}
+
+                <div className="relative flex items-center gap-2">
+                  <div className="flex-1 border-t border-border" />
+                  <span className="text-xs text-muted-foreground px-2">{t('sync.orEnterManually')}</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+
+                <div>
+                  <Label className="mb-1.5 block text-xs">{t('sync.spaceUrl')}</Label>
+                  <Input
+                    placeholder="https://pb.example.com"
+                    value={spaceUrl}
+                    onChange={(e) => setSpaceUrl(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block text-xs">{t('sync.spaceKey')}</Label>
+                  <SpaceKeyInput value={spaceKey} onChange={setSpaceKey} />
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={handleConnect}
+                  disabled={isSyncing || !spaceUrl.trim() || spaceKeyStrength(spaceKey.trim()) === 'weak'}
+                >
+                  <IconPlugConnected size={15} className="mr-2" />
                   {isSyncing ? t('sync.connecting') : t('sync.connect')}
                 </Button>
-                <Button variant="outline" onClick={() => { setShowSetup(true); setSetupUrl(spaceUrl); }}>
-                  {t('sync.setupSync')}
+              </div>
+
+              {/* Divider */}
+              <div className="relative flex items-center gap-2 py-1">
+                <div className="flex-1 border-t border-border" />
+                <span className="text-xs text-muted-foreground px-2">or</span>
+                <div className="flex-1 border-t border-border" />
+              </div>
+
+              {/* Section 2: First-time setup */}
+              <div className="bg-muted/40 border border-border p-4 space-y-2" style={{ borderRadius: 4 }}>
+                <p className="text-sm font-medium">{t('sync.setupNewTitle')}</p>
+                <p className="text-xs text-muted-foreground">{t('sync.setupNewHint')}</p>
+                <Button
+                  variant="outline"
+                  className="w-full mt-1"
+                  onClick={() => setShowSetup(true)}
+                >
+                  {t('sync.setupSync')} →
                 </Button>
               </div>
             </>
           )}
 
-          {/* === SYNCED VIEWS (admin or user) === */}
+          {/* ── CONNECTED ── */}
           {(syncView === 'admin' || syncView === 'user') && (
             <>
               <div className="flex items-center justify-between text-sm">
@@ -287,7 +363,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
 
               {displaySpaceUrl && (
                 <div>
-                  <Label className="mb-2 block">{t('sync.spaceUrlLabel')}</Label>
+                  <Label className="mb-1.5 block text-xs">{t('sync.spaceUrlLabel')}</Label>
                   <div className="flex gap-2">
                     <Input value={displaySpaceUrl} readOnly className="flex-1 font-mono text-xs" />
                     <Button
@@ -309,7 +385,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                 </div>
               )}
 
-              {/* Share project toggle */}
               {(() => {
                 const project = useProjectStore.getState().getCurrentProject();
                 const isShared = project?.shared ?? true;
@@ -323,9 +398,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                       checked={isShared}
                       onCheckedChange={async (v: boolean) => {
                         const pid = useProjectStore.getState().currentProjectId;
-                        if (pid) {
-                          await useProjectStore.getState().updateProject(pid, { shared: v });
-                        }
+                        if (pid) await useProjectStore.getState().updateProject(pid, { shared: v });
                       }}
                     />
                   </div>
@@ -336,7 +409,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         </CardContent>
       </Card>
 
-      {/* Remote Projects card */}
+      {/* Remote Projects */}
       {(syncView === 'admin' || syncView === 'user') && (
         <Card className="mb-4">
           <CardHeader className="flex-row items-center justify-between space-y-0 bg-[#fafafa] border-b border-border">
@@ -348,10 +421,9 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
               {remoteProjects.length > 0 && (() => {
                 const localIds = new Set(projects.map((p) => p.id));
                 const joinable = remoteProjects.filter((rp) => !localIds.has(rp.id));
-                const hasSelection = remoteSelectedIds.size > 0;
                 if (joinable.length === 0) return null;
                 return (
-                  <Button size="sm" onClick={handleJoinRemoteProjects} disabled={remoteJoining || !hasSelection}>
+                  <Button size="sm" onClick={handleJoinRemoteProjects} disabled={remoteJoining || remoteSelectedIds.size === 0}>
                     {remoteJoining ? t('project.joining') : t('project.joinSelected')}
                   </Button>
                 );
@@ -370,9 +442,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
             {remoteProjects.length === 0 && !remoteProjectsLoading && !remoteError && (
               <p className="text-muted-foreground text-center text-sm">{t('project.remoteProjectsHint')}</p>
             )}
-            {remoteError && (
-              <p className="text-sm text-red-500 text-center">{remoteError}</p>
-            )}
+            {remoteError && <p className="text-sm text-red-500 text-center">{remoteError}</p>}
             {remoteProjects.length > 0 && (() => {
               const localIds = new Set(projects.map((p) => p.id));
               return (
@@ -429,7 +499,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         </Card>
       )}
 
-      {/* Admin credentials card */}
+      {/* Admin Credentials */}
       {(syncView === 'admin' || syncView === 'user') && (
         <Card className="mb-4">
           <CardHeader className="flex-row items-center justify-between space-y-0 bg-[#fafafa] border-b border-border">
@@ -508,12 +578,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                   <div className="space-y-3">
                     <div>
                       <Label className="mb-1 block text-xs text-muted-foreground">{t('sync.adminEmail')}</Label>
-                      <Input
-                        type="email"
-                        placeholder="admin@example.com"
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                      />
+                      <Input type="email" placeholder="admin@example.com" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
                     </div>
                     <div>
                       <Label className="mb-1 block text-xs text-muted-foreground">{t('sync.adminPassword')}</Label>
@@ -572,7 +637,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         </Card>
       )}
 
-      {/* Backup help section */}
+      {/* Backup info */}
       {(syncView === 'admin' || syncView === 'user') && (
         <Card className="mb-4">
           <CardHeader className="flex-row items-center justify-between space-y-0 bg-[#fafafa] border-b border-border">
@@ -605,7 +670,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         </Card>
       )}
 
-      {/* Delete Admin Credentials Confirm Modal */}
+      {/* Delete Admin Credentials Modal */}
       <AppModal
         isOpen={showDeleteAdminConfirm}
         onClose={() => setShowDeleteAdminConfirm(false)}
@@ -636,7 +701,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         <p className="text-sm text-muted-foreground">{t('sync.deleteAdminConfirm')}</p>
       </AppModal>
 
-      {/* Server Setup Modal */}
+      {/* Setup Modal — everything in one place */}
       <AppModal
         isOpen={showSetup}
         onClose={() => { setShowSetup(false); setSetupStatus(''); }}
@@ -649,28 +714,26 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
             </Button>
             <Button
               onClick={handleSetupServer}
-              disabled={isSettingUp || !setupUrl.trim() || !adminEmail.trim() || !adminPassword.trim() || spaceKeyStrength(spaceKey.trim()) === 'weak'}
+              disabled={isSettingUp || !setupUrl.trim() || !adminEmail.trim() || !adminPassword.trim() || spaceKeyStrength(setupSpaceKey.trim()) === 'weak'}
             >
               {isSettingUp ? t('common.loading') : t('sync.setupButton')}
             </Button>
           </>
         }
       >
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{t('sync.setupHint')}</p>
-          {!spaceKey.trim() && (
-            <p className="text-sm text-amber-500">{t('sync.setupNeedsKey')}</p>
-          )}
+
           <div>
-            <Label className="mb-2 block">{t('sync.spaceUrl')}</Label>
+            <Label className="mb-1.5 block text-xs">{t('sync.spaceUrl')}</Label>
             <Input placeholder="https://pb.example.com" value={setupUrl} onChange={(e) => setSetupUrl(e.target.value)} />
           </div>
           <div>
-            <Label className="mb-2 block">{t('sync.adminEmail')}</Label>
+            <Label className="mb-1.5 block text-xs">{t('sync.adminEmail')}</Label>
             <Input type="email" placeholder="admin@example.com" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
           </div>
           <div>
-            <Label className="mb-2 block">{t('sync.adminPassword')}</Label>
+            <Label className="mb-1.5 block text-xs">{t('sync.adminPassword')}</Label>
             <div className="relative">
               <Input
                 type={showAdminPassword ? 'text' : 'password'}
@@ -689,6 +752,11 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
               </button>
             </div>
           </div>
+          <div>
+            <Label className="mb-1.5 block text-xs">{t('sync.spaceKey')}</Label>
+            <SpaceKeyInput value={setupSpaceKey} onChange={setSetupSpaceKey} />
+          </div>
+
           {setupStatus && (
             <p className={`text-sm ${setupStatus.includes(t('sync.error')) ? 'text-red-400' : 'text-green-500'}`}>
               {setupStatus}

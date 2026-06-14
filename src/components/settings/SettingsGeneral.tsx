@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  IconCheck, IconDownload, IconTrash, IconAlertTriangle, IconMicrophone,
+  IconCheck, IconDownload, IconTrash, IconAlertTriangle, IconMicrophone, IconLock,
 } from '@tabler/icons-react';
 import { getApiKey, setApiKey } from '../../services/aiService';
 import {
@@ -10,6 +10,7 @@ import {
 } from '../../services/voiceService';
 import { syncService } from '../../services/syncService';
 import { getConfig, setConfig, deleteConfig } from '../../services/database';
+import { hashPassphrase, verifyPassphrase } from '../../services/crypto';
 import { log } from '../../services/logService';
 import { enable as autostartEnable, disable as autostartDisable, isEnabled as autostartIsEnabled } from '@tauri-apps/plugin-autostart';
 import { useLayoutStore } from '@/stores/layoutStore';
@@ -40,6 +41,40 @@ export default function SettingsGeneral() {
   const [voiceModels, setVoiceModels] = useState<ModelStatus[]>([]);
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
+
+  // Change passphrase
+  const [currentPassphrase, setCurrentPassphrase] = useState('');
+  const [newPassphrase, setNewPassphrase] = useState('');
+  const [confirmPassphrase, setConfirmPassphrase] = useState('');
+  const [passphraseError, setPassphraseError] = useState('');
+  const [passphraseSuccess, setPassphraseSuccess] = useState(false);
+  const [isChangingPassphrase, setIsChangingPassphrase] = useState(false);
+
+  const handleChangePassphrase = async () => {
+    setPassphraseError('');
+    setPassphraseSuccess(false);
+    if (newPassphrase.length < 8) { setPassphraseError(t('passphrase.tooShort')); return; }
+    if (newPassphrase !== confirmPassphrase) { setPassphraseError(t('passphrase.noMatch')); return; }
+    setIsChangingPassphrase(true);
+    try {
+      const storedHash = await getConfig('passphrase_hash');
+      if (storedHash) {
+        const valid = await verifyPassphrase(currentPassphrase, storedHash);
+        if (!valid) { setPassphraseError(t('passphrase.currentIncorrect')); return; }
+      }
+      const newHash = await hashPassphrase(newPassphrase);
+      await setConfig('passphrase_hash', newHash);
+      setCurrentPassphrase('');
+      setNewPassphrase('');
+      setConfirmPassphrase('');
+      setPassphraseSuccess(true);
+      setTimeout(() => setPassphraseSuccess(false), 3000);
+    } catch (err) {
+      setPassphraseError(String(err));
+    } finally {
+      setIsChangingPassphrase(false);
+    }
+  };
 
   // Danger zone
   const [showLeaveProject, setShowLeaveProject] = useState(false);
@@ -463,6 +498,58 @@ export default function SettingsGeneral() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Change Passphrase */}
+      <Card className="mb-4">
+        <CardHeader className="bg-[#fafafa] border-b border-border">
+          <CardTitle className="text-base flex items-center gap-2">
+            <IconLock size={16} />
+            {t('passphrase.changeTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 space-y-3">
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">{t('passphrase.currentPassphrase')}</Label>
+            <Input
+              type="password"
+              placeholder={t('passphrase.placeholder')}
+              value={currentPassphrase}
+              onChange={(e) => setCurrentPassphrase(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">{t('passphrase.newPassphrase')}</Label>
+            <Input
+              type="password"
+              placeholder={t('passphrase.placeholder')}
+              value={newPassphrase}
+              onChange={(e) => setNewPassphrase(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label className="mb-1.5 block text-xs text-muted-foreground">{t('passphrase.confirmNew')}</Label>
+            <Input
+              type="password"
+              placeholder={t('passphrase.confirmPlaceholder')}
+              value={confirmPassphrase}
+              onChange={(e) => setConfirmPassphrase(e.target.value)}
+            />
+          </div>
+          {passphraseError && <p className="text-sm text-red-500">{passphraseError}</p>}
+          {passphraseSuccess && (
+            <p className="text-sm text-green-600 flex items-center gap-1">
+              <IconCheck size={14} /> {t('passphrase.changeSuccess')}
+            </p>
+          )}
+          <Button
+            onClick={handleChangePassphrase}
+            disabled={isChangingPassphrase || !currentPassphrase || !newPassphrase || !confirmPassphrase}
+            size="sm"
+          >
+            {isChangingPassphrase ? t('common.loading') : t('passphrase.changeTitle')}
+          </Button>
         </CardContent>
       </Card>
 

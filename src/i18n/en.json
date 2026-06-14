@@ -310,7 +310,13 @@
     "incorrect": "Incorrect passphrase",
     "hint": "Set a passphrase to protect your data. You will be asked for it each time the app starts.",
     "tooShort": "Passphrase must be at least 8 characters",
-    "noMatch": "Passphrases do not match"
+    "noMatch": "Passphrases do not match",
+    "changeSuccess": "Passphrase changed successfully",
+    "changeTitle": "Change Passphrase",
+    "currentPassphrase": "Current passphrase",
+    "confirmNew": "Confirm new passphrase",
+    "currentIncorrect": "Current passphrase is incorrect",
+    "newPassphrase": "New passphrase"
   },
   "reminders": {
     "create": "New Reminder",
@@ -462,7 +468,15 @@
     "restoreStep1": "Open PocketBase Admin UI (Settings > Backups)",
     "restoreStep2": "Upload the .zip backup file",
     "restoreStep3": "Click \"Restore\" to roll back",
-    "backupHint": "Recommended file name: pb_backup_schema_v{{version}}.zip — this helps you identify which schema version the backup belongs to."
+    "backupHint": "Recommended file name: pb_backup_schema_v{{version}}.zip — this helps you identify which schema version the backup belongs to.",
+    "setupNewTitle": "First-time setup",
+    "pasteSpaceUrl": "Have a Space URL?",
+    "spaceUrlParsed": "URL and key filled in.",
+    "setupNewHint": "Setting up PocketBase for the first time? Create all required collections automatically.",
+    "joinHint": "Enter the PocketBase URL and Space Key provided by your admin.",
+    "parseAndFill": "Fill from URL",
+    "joinTitle": "Join a space",
+    "orEnterManually": "or enter manually"
   },
   "schema": {
     "appTooOld": "App version outdated",

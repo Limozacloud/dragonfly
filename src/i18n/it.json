@@ -310,7 +310,13 @@
     "incorrect": "Passphrase errata",
     "hint": "Imposta una passphrase per proteggere i tuoi dati. Verrà richiesta ad ogni avvio.",
     "tooShort": "La passphrase deve avere almeno 8 caratteri",
-    "noMatch": "Le passphrase non corrispondono"
+    "noMatch": "Le passphrase non corrispondono",
+    "changeSuccess": "Passphrase cambiata con successo",
+    "changeTitle": "Cambia passphrase",
+    "currentPassphrase": "Passphrase attuale",
+    "confirmNew": "Conferma nuova passphrase",
+    "currentIncorrect": "La passphrase attuale non è corretta",
+    "newPassphrase": "Nuova passphrase"
   },
   "reminders": {
     "create": "Nuovo promemoria",
@@ -462,7 +468,15 @@
     "restoreStep1": "Aprire l'interfaccia admin di PocketBase (Settings > Backups)",
     "restoreStep2": "Caricare il file .zip di backup",
     "restoreStep3": "Cliccare su \"Restore\" per ripristinare",
-    "backupHint": "Nome file consigliato: pb_backup_schema_v{{version}}.zip — questo aiuta a identificare a quale versione dello schema appartiene il backup."
+    "backupHint": "Nome file consigliato: pb_backup_schema_v{{version}}.zip — questo aiuta a identificare a quale versione dello schema appartiene il backup.",
+    "setupNewTitle": "Prima configurazione",
+    "pasteSpaceUrl": "Hai un URL spazio?",
+    "spaceUrlParsed": "URL e chiave inseriti.",
+    "setupNewHint": "Stai configurando PocketBase per la prima volta? Crea automaticamente tutte le collezioni necessarie.",
+    "joinHint": "Inserisci l'URL di PocketBase e la chiave dello spazio fornita dal tuo amministratore.",
+    "parseAndFill": "Compila dall'URL",
+    "joinTitle": "Entra in uno spazio",
+    "orEnterManually": "oppure inserisci manualmente"
   },
   "schema": {
     "appTooOld": "Versione app obsoleta",
