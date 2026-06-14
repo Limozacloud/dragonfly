@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DragonFly – Release build (Linux → .deb / .AppImage / .rpm)
-# Checks all dependencies, installs missing ones, then builds the release bundles.
+# Run ./scripts/setup.sh first to install all dependencies.
 # Usage: ./scripts/build.sh [--skip-frontend] [--debug]
 
 set -e
@@ -27,60 +27,28 @@ echo -e "\n${CYAN}=== DragonFly – Release Build (Linux) ===${NC}"
 VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
 echo -e "Version: $VERSION\n"
 
-# ── System packages ───────────────────────────────────────────────────────────
-PKGS=()
-command -v curl &>/dev/null                || PKGS+=("curl")
-dpkg -s pkg-config &>/dev/null             || PKGS+=("pkg-config")
-dpkg -s libssl-dev &>/dev/null             || PKGS+=("libssl-dev")
-dpkg -s libwebkit2gtk-4.1-dev &>/dev/null || PKGS+=("libwebkit2gtk-4.1-dev")
-dpkg -s libclang-dev &>/dev/null           || PKGS+=("libclang-dev")
-command -v clang &>/dev/null               || PKGS+=("clang")
-dpkg -s cmake &>/dev/null                  || PKGS+=("cmake")
-dpkg -s build-essential &>/dev/null        || PKGS+=("build-essential")
-dpkg -s libgtk-3-dev &>/dev/null           || PKGS+=("libgtk-3-dev")
-dpkg -s librsvg2-dev &>/dev/null           || PKGS+=("librsvg2-dev")
-dpkg -s libayatana-appindicator3-dev &>/dev/null || PKGS+=("libayatana-appindicator3-dev")
-dpkg -s patchelf &>/dev/null               || PKGS+=("patchelf")
+# ── Preflight checks ──────────────────────────────────────────────────────────
+MISSING=()
+command -v node  &>/dev/null || MISSING+=("node")
+command -v cargo &>/dev/null || MISSING+=("cargo")
+command -v npm   &>/dev/null || MISSING+=("npm")
 
-if [[ ${#PKGS[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}[INSTALL] Missing packages: ${PKGS[*]}${NC}"
-    sudo apt-get update -qq
-    sudo apt-get install -y "${PKGS[@]}"
-else
-    echo -e "${GREEN}[OK] System packages present${NC}"
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    echo -e "${RED}[ERROR] Missing: ${MISSING[*]}${NC}"
+    echo -e "        Run ./scripts/setup.sh first."
+    exit 1
 fi
 
-# ── Node.js ───────────────────────────────────────────────────────────────────
-if ! command -v node &>/dev/null; then
-    echo -e "${YELLOW}[INSTALL] Node.js not found – installing via nvm...${NC}"
-    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    export NVM_DIR="$HOME/.nvm"
-    # shellcheck disable=SC1091
-    source "$NVM_DIR/nvm.sh"
-    nvm install --lts && nvm use --lts
-else
-    echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
-fi
+echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
+echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
 
-# ── Rust ──────────────────────────────────────────────────────────────────────
-if ! command -v cargo &>/dev/null; then
-    echo -e "${YELLOW}[INSTALL] Rust not found – installing rustup...${NC}"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-    source "$HOME/.cargo/env"
-else
-    echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
-fi
-
+# ── Source cargo env ──────────────────────────────────────────────────────────
 [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
 # ── LIBCLANG_PATH ─────────────────────────────────────────────────────────────
 if [[ -z "$LIBCLANG_PATH" ]]; then
     CLANG_LIB=""
-    # try llvm-config first (most reliable)
-    if command -v llvm-config &>/dev/null; then
-        CLANG_LIB=$(llvm-config --libdir 2>/dev/null || true)
-    fi
-    # fallback: search common locations
+    command -v llvm-config &>/dev/null && CLANG_LIB=$(llvm-config --libdir 2>/dev/null || true)
     if [[ -z "$CLANG_LIB" ]]; then
         CLANG_LIB=$(find /usr/lib/llvm-* /usr/lib/x86_64-linux-gnu /usr/lib -maxdepth 3 \
             -name "libclang*.so*" 2>/dev/null | head -1 | xargs -I{} dirname {} 2>/dev/null || true)

@@ -1,76 +1,45 @@
 #!/usr/bin/env bash
 # DragonFly – Dev startup (Linux / macOS)
-# Checks all dependencies, installs missing ones, then launches the app with hot reload.
+# Run ./scripts/setup.sh first to install all dependencies.
 # Usage: ./scripts/dev.sh
 
 set -e
 
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "\n${CYAN}=== DragonFly – Dev Setup ===${NC}"
 
-OS="$(uname -s)"
+# ── Preflight checks ──────────────────────────────────────────────────────────
+MISSING=()
+command -v node  &>/dev/null || MISSING+=("node")
+command -v cargo &>/dev/null || MISSING+=("cargo")
+command -v npm   &>/dev/null || MISSING+=("npm")
 
-# ── System packages (Linux only) ──────────────────────────────────────────────
-if [[ "$OS" == "Linux" ]]; then
-    PKGS=()
-    dpkg -s libwebkit2gtk-4.1-dev &>/dev/null || PKGS+=("libwebkit2gtk-4.1-dev")
-    dpkg -s libclang-dev &>/dev/null           || PKGS+=("libclang-dev")
-    dpkg -s cmake &>/dev/null                  || PKGS+=("cmake")
-    dpkg -s build-essential &>/dev/null        || PKGS+=("build-essential")
-    dpkg -s libgtk-3-dev &>/dev/null           || PKGS+=("libgtk-3-dev")
-    dpkg -s librsvg2-dev &>/dev/null           || PKGS+=("librsvg2-dev")
-    dpkg -s libayatana-appindicator3-dev &>/dev/null || PKGS+=("libayatana-appindicator3-dev")
-
-    if [[ ${#PKGS[@]} -gt 0 ]]; then
-        echo -e "${YELLOW}[INSTALL] Missing system packages: ${PKGS[*]}${NC}"
-        sudo apt-get update -qq
-        sudo apt-get install -y "${PKGS[@]}"
-    else
-        echo -e "${GREEN}[OK] System packages present${NC}"
-    fi
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    echo -e "${RED}[ERROR] Missing: ${MISSING[*]}${NC}"
+    echo -e "        Run ./scripts/setup.sh first."
+    exit 1
 fi
 
-# ── Node.js ───────────────────────────────────────────────────────────────────
-if ! command -v node &>/dev/null; then
-    echo -e "${YELLOW}[INSTALL] Node.js not found – installing via nvm...${NC}"
-    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-    export NVM_DIR="$HOME/.nvm"
-    # shellcheck disable=SC1091
-    source "$NVM_DIR/nvm.sh"
-    nvm install --lts
-    nvm use --lts
-else
-    echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
-fi
+echo -e "${GREEN}[OK] Node.js $(node --version)${NC}"
+echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
 
-# ── Rust ──────────────────────────────────────────────────────────────────────
-if ! command -v cargo &>/dev/null; then
-    echo -e "${YELLOW}[INSTALL] Rust not found – installing rustup...${NC}"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-    source "$HOME/.cargo/env"
-else
-    echo -e "${GREEN}[OK] Rust $(rustc --version)${NC}"
-fi
-
-# Source cargo env in case it was just installed
+# ── Source cargo env ──────────────────────────────────────────────────────────
 [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
 
 # ── LIBCLANG_PATH (Linux) ─────────────────────────────────────────────────────
-if [[ "$OS" == "Linux" ]]; then
-    if [[ -z "$LIBCLANG_PATH" ]]; then
-        CLANG_LIB=$(find /usr/lib/llvm-* /usr/lib/x86_64-linux-gnu -name "libclang*.so*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null || true)
-        if [[ -n "$CLANG_LIB" ]]; then
-            export LIBCLANG_PATH="$CLANG_LIB"
-            echo -e "${GREEN}[OK] LIBCLANG_PATH=$LIBCLANG_PATH${NC}"
-        else
-            echo -e "${YELLOW}[WARN] Could not auto-detect LIBCLANG_PATH – whisper-rs may fail to compile${NC}"
-        fi
+if [[ "$(uname -s)" == "Linux" && -z "$LIBCLANG_PATH" ]]; then
+    CLANG_LIB=""
+    command -v llvm-config &>/dev/null && CLANG_LIB=$(llvm-config --libdir 2>/dev/null || true)
+    if [[ -z "$CLANG_LIB" ]]; then
+        CLANG_LIB=$(find /usr/lib/llvm-* /usr/lib/x86_64-linux-gnu /usr/lib -maxdepth 3 \
+            -name "libclang*.so*" 2>/dev/null | head -1 | xargs -I{} dirname {} 2>/dev/null || true)
     fi
+    [[ -n "$CLANG_LIB" ]] && export LIBCLANG_PATH="$CLANG_LIB" && echo -e "${GREEN}[OK] LIBCLANG_PATH=$LIBCLANG_PATH${NC}"
 fi
 
 # ── npm install ───────────────────────────────────────────────────────────────
