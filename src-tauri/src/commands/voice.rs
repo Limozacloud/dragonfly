@@ -231,10 +231,10 @@ pub async fn transcribe_audio(
 
         state.full(params, &mono).map_err(|e| e.to_string())?;
 
-        let n = state.full_n_segments().map_err(|e| e.to_string())?;
+        let n = state.full_n_segments();
         let mut text = String::new();
         for i in 0..n {
-            text.push_str(&state.full_get_segment_text(i).map_err(|e| e.to_string())?);
+            text.push_str(&state.get_segment(i).map_err(|e| e.to_string())?);
         }
 
         Ok(text.trim().to_string())
