@@ -7,7 +7,7 @@
   <br /><br />
 
   ![GitHub release](https://img.shields.io/github/v/release/Limozacloud/dragonfly)
-  ![License](https://img.shields.io/github/license/Limozacloud/dragonfly)
+  ![License](https://img.shields.io/badge/license-ELv2-blue)
   ![GitHub Actions](https://img.shields.io/github/actions/workflow/status/Limozacloud/dragonfly/ci.yml?label=CI)
   ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)
   ![i18n](https://img.shields.io/badge/languages-7-green)
