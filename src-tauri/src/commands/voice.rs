@@ -123,11 +123,7 @@ pub async fn download_whisper_model(model: String, app: AppHandle) -> Result<(),
             return Err(e.to_string());
         }
         downloaded += chunk.len() as u64;
-        let progress = if total > 0 {
-            (downloaded * 100 / total) as u8
-        } else {
-            0
-        };
+        let progress = downloaded.checked_div(total).map_or(0, |p| (p * 100) as u8);
         let _ = app.emit(
             "whisper-download-progress",
             DownloadProgress {

@@ -4,6 +4,7 @@ use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::client::{Tls, TlsParameters};
 use lettre::{Message, SmtpTransport, Transport};
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub async fn send_notification_email(
     to: String,
