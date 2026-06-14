@@ -29,6 +29,7 @@ echo -e "Version: $VERSION\n"
 
 # ── System packages ───────────────────────────────────────────────────────────
 PKGS=()
+command -v curl &>/dev/null                || PKGS+=("curl")
 dpkg -s libwebkit2gtk-4.1-dev &>/dev/null || PKGS+=("libwebkit2gtk-4.1-dev")
 dpkg -s libclang-dev &>/dev/null           || PKGS+=("libclang-dev")
 dpkg -s cmake &>/dev/null                  || PKGS+=("cmake")
