@@ -34,6 +34,7 @@ dpkg -s pkg-config &>/dev/null             || PKGS+=("pkg-config")
 dpkg -s libssl-dev &>/dev/null             || PKGS+=("libssl-dev")
 dpkg -s libwebkit2gtk-4.1-dev &>/dev/null || PKGS+=("libwebkit2gtk-4.1-dev")
 dpkg -s libclang-dev &>/dev/null           || PKGS+=("libclang-dev")
+command -v clang &>/dev/null               || PKGS+=("clang")
 dpkg -s cmake &>/dev/null                  || PKGS+=("cmake")
 dpkg -s build-essential &>/dev/null        || PKGS+=("build-essential")
 dpkg -s libgtk-3-dev &>/dev/null           || PKGS+=("libgtk-3-dev")
@@ -74,10 +75,21 @@ fi
 
 # ── LIBCLANG_PATH ─────────────────────────────────────────────────────────────
 if [[ -z "$LIBCLANG_PATH" ]]; then
-    CLANG_LIB=$(find /usr/lib/llvm-* /usr/lib/x86_64-linux-gnu -name "libclang*.so*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null || true)
+    CLANG_LIB=""
+    # try llvm-config first (most reliable)
+    if command -v llvm-config &>/dev/null; then
+        CLANG_LIB=$(llvm-config --libdir 2>/dev/null || true)
+    fi
+    # fallback: search common locations
+    if [[ -z "$CLANG_LIB" ]]; then
+        CLANG_LIB=$(find /usr/lib/llvm-* /usr/lib/x86_64-linux-gnu /usr/lib -maxdepth 3 \
+            -name "libclang*.so*" 2>/dev/null | head -1 | xargs -I{} dirname {} 2>/dev/null || true)
+    fi
     if [[ -n "$CLANG_LIB" ]]; then
         export LIBCLANG_PATH="$CLANG_LIB"
         echo -e "${GREEN}[OK] LIBCLANG_PATH=$LIBCLANG_PATH${NC}"
+    else
+        echo -e "${YELLOW}[WARN] Could not auto-detect LIBCLANG_PATH – set it manually if build fails${NC}"
     fi
 fi
 
