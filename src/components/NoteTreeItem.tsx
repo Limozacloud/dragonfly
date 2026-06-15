@@ -14,18 +14,19 @@ interface NoteTreeItemProps {
   onCreateChild: (parentId: string) => void;
   filterMatch: Set<string>;
   expandSignal: { key: number; expanded: boolean };
+  sortFn: (a: Note, b: Note) => number;
 }
 
-function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filterMatch, expandSignal }: NoteTreeItemProps) {
+function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filterMatch, expandSignal, sortFn }: NoteTreeItemProps) {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { getChildren, toggleFavorite } = useNoteStore();
 
   useEffect(() => {
     setIsExpanded(expandSignal.expanded);
   }, [expandSignal.key]);
 
-  const children = getChildren(note.id);
+  const children = getChildren(note.id).slice().sort(sortFn);
   const hasChildren = children.length > 0;
   const isActive = activeNoteId === note.id;
 
@@ -39,7 +40,6 @@ function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filt
     data: { note },
   });
 
-  // If filter is active and this note (and none of its descendants) match, hide it
   if (filterMatch.size > 0 && !filterMatch.has(note.id)) {
     return null;
   }
@@ -110,6 +110,7 @@ function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filt
           className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:bg-muted rounded-sm transition-opacity"
           onClick={(e) => {
             e.stopPropagation();
+            setIsExpanded(true);
             onCreateChild(note.id);
           }}
           title={t('notes.addSubNote')}
@@ -131,6 +132,7 @@ function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filt
               onCreateChild={onCreateChild}
               filterMatch={filterMatch}
               expandSignal={expandSignal}
+              sortFn={sortFn}
             />
           ))}
         </div>

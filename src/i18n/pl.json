@@ -264,7 +264,12 @@
     "addToFavorites": "Dodaj do ulubionych",
     "removeFromFavorites": "Usun z ulubionych",
     "collapseAll": "Zwij wszystkie",
-    "expandAll": "Rozwij wszystkie"
+    "expandAll": "Rozwij wszystkie",
+    "sortLabel": "Sortuj notatki",
+    "sortTitleAsc": "Tytuł (A → Z)",
+    "sortTitleDesc": "Tytuł (Z → A)",
+    "sortCreatedAsc": "Najstarsze pierwsze",
+    "sortCreatedDesc": "Najnowsze pierwsze"
   },
   "scratchpad": {
     "title": "Scratchpads",
@@ -310,7 +315,13 @@
     "incorrect": "Nieprawidłowe hasło",
     "hint": "Ustaw hasło, aby chronić swoje dane. Będzie wymagane przy każdym uruchomieniu.",
     "tooShort": "Hasło musi mieć co najmniej 8 znaków",
-    "noMatch": "Hasła nie są zgodne"
+    "noMatch": "Hasła nie są zgodne",
+    "changeSuccess": "Hasło zostało zmienione",
+    "changeTitle": "Zmień hasło",
+    "currentPassphrase": "Aktualne hasło",
+    "confirmNew": "Potwierdź nowe hasło",
+    "currentIncorrect": "Aktualne hasło jest nieprawidłowe",
+    "newPassphrase": "Nowe hasło"
   },
   "reminders": {
     "create": "Nowe przypomnienie",
@@ -371,8 +382,8 @@
     "weekdaySun": "Nd"
   },
   "layout": {
-    "collapseSidebar": "Zwi\u0144 pasek boczny",
-    "expandSidebar": "Rozwi\u0144 pasek boczny"
+    "collapseSidebar": "Zwiń pasek boczny",
+    "expandSidebar": "Rozwiń pasek boczny"
   },
   "project": {
     "title": "Projekty",
@@ -462,7 +473,15 @@
     "restoreStep1": "Otworz panel admina PocketBase (Settings > Backups)",
     "restoreStep2": "Wgraj plik .zip kopii zapasowej",
     "restoreStep3": "Kliknij \"Restore\", aby przywrocic",
-    "backupHint": "Zalecana nazwa pliku: pb_backup_schema_v{{version}}.zip — to pomaga zidentyfikowac, do ktorej wersji schematu nalezy kopia."
+    "backupHint": "Zalecana nazwa pliku: pb_backup_schema_v{{version}}.zip — to pomaga zidentyfikowac, do ktorej wersji schematu nalezy kopia.",
+    "setupNewTitle": "Pierwsze uruchomienie",
+    "pasteSpaceUrl": "Masz URL przestrzeni?",
+    "spaceUrlParsed": "URL i klucz zostały wypełnione.",
+    "setupNewHint": "Konfigurujesz PocketBase po raz pierwszy? Automatycznie utwórz wszystkie wymagane kolekcje.",
+    "joinHint": "Wprowadź URL PocketBase i klucz przestrzeni podany przez administratora.",
+    "parseAndFill": "Wypełnij z URL",
+    "joinTitle": "Dołącz do przestrzeni",
+    "orEnterManually": "lub wprowadź ręcznie"
   },
   "schema": {
     "appTooOld": "Wersja aplikacji nieaktualna",

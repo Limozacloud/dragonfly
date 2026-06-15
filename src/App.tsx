@@ -448,7 +448,7 @@ function App() {
             appVersion: schemaVersionInfo?.local ?? '?',
           })}
         </p>
-        <Button onClick={() => open('https://github.com/McHill007/dragonfly-release/releases')}>
+        <Button onClick={() => open('https://github.com/Limozacloud/dragonfly/releases')}>
           <IconDownload size={16} className="mr-1" />
           {t('settings.downloadUpdate')}
         </Button>
