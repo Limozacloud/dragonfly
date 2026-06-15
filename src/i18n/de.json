@@ -264,7 +264,12 @@
     "addToFavorites": "Zu Favoriten hinzufügen",
     "removeFromFavorites": "Aus Favoriten entfernen",
     "collapseAll": "Alle einklappen",
-    "expandAll": "Alle ausklappen"
+    "expandAll": "Alle ausklappen",
+    "sortLabel": "Notizen sortieren",
+    "sortTitleAsc": "Titel (A → Z)",
+    "sortTitleDesc": "Titel (Z → A)",
+    "sortCreatedAsc": "Älteste zuerst",
+    "sortCreatedDesc": "Neueste zuerst"
   },
   "scratchpad": {
     "title": "Skizzenblock",

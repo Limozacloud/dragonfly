@@ -264,7 +264,12 @@
     "addToFavorites": "Ajouter aux favoris",
     "removeFromFavorites": "Retirer des favoris",
     "collapseAll": "Tout reduire",
-    "expandAll": "Tout developper"
+    "expandAll": "Tout developper",
+    "sortLabel": "Trier les notes",
+    "sortTitleAsc": "Titre (A → Z)",
+    "sortTitleDesc": "Titre (Z → A)",
+    "sortCreatedAsc": "Plus anciennes d'abord",
+    "sortCreatedDesc": "Plus recentes d'abord"
   },
   "scratchpad": {
     "title": "Scratchpads",

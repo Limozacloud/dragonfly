@@ -264,7 +264,12 @@
     "addToFavorites": "Adauga la favorite",
     "removeFromFavorites": "Elimina din favorite",
     "collapseAll": "Restrânge tot",
-    "expandAll": "Extinde tot"
+    "expandAll": "Extinde tot",
+    "sortLabel": "Sortează notițe",
+    "sortTitleAsc": "Titlu (A → Z)",
+    "sortTitleDesc": "Titlu (Z → A)",
+    "sortCreatedAsc": "Cele mai vechi primul",
+    "sortCreatedDesc": "Cele mai noi primul"
   },
   "scratchpad": {
     "title": "Scratchpads",

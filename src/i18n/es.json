@@ -264,7 +264,12 @@
     "addToFavorites": "Añadir a favoritos",
     "removeFromFavorites": "Quitar de favoritos",
     "collapseAll": "Contraer todo",
-    "expandAll": "Expandir todo"
+    "expandAll": "Expandir todo",
+    "sortLabel": "Ordenar notas",
+    "sortTitleAsc": "Título (A → Z)",
+    "sortTitleDesc": "Título (Z → A)",
+    "sortCreatedAsc": "Más antiguas primero",
+    "sortCreatedDesc": "Más recientes primero"
   },
   "scratchpad": {
     "title": "Scratchpads",

@@ -30,6 +30,7 @@ import {
   IconEye,
   IconChevronsUp,
   IconChevronsDown,
+  IconArrowsSort,
   IconDownload,
   IconList,
   IconStarFilled,
@@ -130,8 +131,36 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
   const [deleteDialogNoteId, setDeleteDialogNoteId] = useState<string | null>(null);
 
   // Expand/collapse all tree items: key increments to trigger, expanded = target state
-  const [expandSignal, setExpandSignal] = useState<{ key: number; expanded: boolean }>({ key: 0, expanded: true });
+  const [expandSignal, setExpandSignal] = useState<{ key: number; expanded: boolean }>({ key: 0, expanded: false });
   const [tagsExpanded, setTagsExpanded] = useState(false);
+
+  type NoteSort = 'title_asc' | 'title_desc' | 'created_asc' | 'created_desc';
+  const [noteSort, setNoteSort] = useState<NoteSort>(
+    () => (localStorage.getItem('dragonfly-notes-sort') as NoteSort) || 'created_asc'
+  );
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const handler = () => setSortMenuOpen(false);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [sortMenuOpen]);
+
+  const sortFn = useMemo(() => {
+    switch (noteSort) {
+      case 'title_asc':  return (a: Note, b: Note) => (a.title || '').localeCompare(b.title || '');
+      case 'title_desc': return (a: Note, b: Note) => (b.title || '').localeCompare(a.title || '');
+      case 'created_desc': return (a: Note, b: Note) => b.createdAt.localeCompare(a.createdAt);
+      default:           return (a: Note, b: Note) => a.createdAt.localeCompare(b.createdAt);
+    }
+  }, [noteSort]);
+
+  function handleSetSort(sort: NoteSort) {
+    setNoteSort(sort);
+    localStorage.setItem('dragonfly-notes-sort', sort);
+    setSortMenuOpen(false);
+  }
   const [favoritesExpanded, setFavoritesExpanded] = useState(false);
 
   // Drag & drop
@@ -544,7 +573,7 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
   };
 
 
-  const rootNotes = getRootNotes();
+  const rootNotes = getRootNotes().slice().sort(sortFn);
   const deleteDialogNote = deleteDialogNoteId
     ? notes.find((n) => n.id === deleteDialogNoteId)
     : null;
@@ -637,14 +666,47 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
 
         <div className="flex items-center justify-between px-3 pt-3 pb-1.5">
           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t('sidebar.notes')}</span>
-          <button
-            type="button"
-            className="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
-            onClick={() => setExpandSignal((s) => ({ key: s.key + 1, expanded: !s.expanded }))}
-            title={expandSignal.expanded ? t('notes.collapseAll') : t('notes.expandAll')}
-          >
-            {expandSignal.expanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
-          </button>
+          <div className="flex items-center gap-0.5">
+            {/* Sort dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                className="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                onClick={() => setSortMenuOpen((o) => !o)}
+                title={t('notes.sortLabel')}
+              >
+                <IconArrowsSort size={14} />
+              </button>
+              {sortMenuOpen && (
+                <div
+                  className="absolute right-0 top-6 z-50 bg-popover border rounded-md shadow-md py-1 min-w-[160px]"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  {(['created_asc', 'created_desc', 'title_asc', 'title_desc'] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={cn(
+                        'w-full text-left px-3 py-1.5 text-xs hover:bg-muted transition-colors',
+                        noteSort === opt && 'text-primary font-medium'
+                      )}
+                      onClick={() => handleSetSort(opt)}
+                    >
+                      {t(`notes.sort${opt.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join('')}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+              onClick={() => setExpandSignal((s) => ({ key: s.key + 1, expanded: !s.expanded }))}
+              title={expandSignal.expanded ? t('notes.collapseAll') : t('notes.expandAll')}
+            >
+              {expandSignal.expanded ? <IconChevronsUp size={14} /> : <IconChevronsDown size={14} />}
+            </button>
+          </div>
         </div>
 
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -664,6 +726,7 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
                     onCreateChild={handleCreateChild}
                     filterMatch={filterMatch}
                     expandSignal={expandSignal}
+                    sortFn={sortFn}
                   />
                 ))
               )}

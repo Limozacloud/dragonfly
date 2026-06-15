@@ -9,7 +9,7 @@ import es from './es.json';
 import it from './it.json';
 import ro from './ro.json';
 
-const savedLanguage = localStorage.getItem('dragonfly-language') || 'de';
+const savedLanguage = localStorage.getItem('dragonfly-language') || 'en';
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -22,7 +22,7 @@ i18n.use(initReactI18next).init({
     ro: { translation: ro },
   },
   lng: savedLanguage,
-  fallbackLng: 'de',
+  fallbackLng: 'en',
   interpolation: {
     escapeValue: false,
   },
