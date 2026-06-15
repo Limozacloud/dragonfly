@@ -15,6 +15,15 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "`n=== DragonFly – Release Build (Windows) ===" -ForegroundColor Cyan
 Write-Host "Version: $((Get-Content .\src-tauri\tauri.conf.json | ConvertFrom-Json).version)`n"
 
+# ── LLVM in PATH (must happen before dependency check) ────────────────────────
+$llvmBin = @("C:\Program Files\LLVM\bin","C:\LLVM\bin") |
+    Where-Object { Test-Path "$_\clang.exe" } | Select-Object -First 1
+if (!$llvmBin) { $llvmBin = Split-Path (Get-Command clang -ErrorAction SilentlyContinue).Source -ErrorAction SilentlyContinue }
+if ($llvmBin) {
+    $env:PATH = "$llvmBin;" + $env:PATH
+    Write-Host "[OK] LLVM at $llvmBin" -ForegroundColor Green
+}
+
 # ── Dependency check ──────────────────────────────────────────────────────────
 $missing = @()
 if (!(Check-Command "node"))  { $missing += "Node.js" }
@@ -36,15 +45,6 @@ if ($missing.Count -gt 0) {
 Write-Host "[OK] Node.js $(node --version)" -ForegroundColor Green
 Write-Host "[OK] Rust $(rustc --version)" -ForegroundColor Green
 Write-Host "[OK] CMake $(cmake --version | Select-Object -First 1)" -ForegroundColor Green
-
-# ── LLVM in PATH ──────────────────────────────────────────────────────────────
-$llvmBin = Get-ChildItem "C:\Program Files\LLVM\bin","C:\LLVM\bin" -ErrorAction SilentlyContinue |
-    Where-Object { Test-Path "$($_.FullName)\clang.exe" } | Select-Object -First 1 -ExpandProperty FullName
-if (!$llvmBin) { $llvmBin = Split-Path (Get-Command clang -ErrorAction SilentlyContinue).Source }
-if ($llvmBin) {
-    $env:PATH = "$llvmBin;" + $env:PATH
-    Write-Host "[OK] LLVM at $llvmBin" -ForegroundColor Green
-}
 
 # ── BINDGEN_EXTRA_CLANG_ARGS ──────────────────────────────────────────────────
 $includes = @()

@@ -14,6 +14,27 @@ NC='\033[0m'
 
 echo -e "\n${CYAN}=== DragonFly – Environment Setup ===${NC}"
 
+echo -e "
+This script will install the following tools on your system:
+  - System packages via apt (curl, pkg-config, libssl-dev, cmake,
+    build-essential, libwebkit2gtk-4.1-dev, libclang-dev, clang,
+    libgtk-3-dev, librsvg2-dev, libayatana-appindicator3-dev, patchelf)
+  - Node.js LTS        (via nvm)
+  - Rust + cargo       (via rustup)
+
+It will also set the LIBCLANG_PATH environment variable in your
+~/.bashrc or ~/.zshrc.
+
+${YELLOW}Recommendation: If you are setting up a development environment for the
+first time, consider doing this inside a virtual machine to keep your host system clean.${NC}
+"
+
+read -r -p "Do you want to continue? [y/N] " confirm
+if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+    echo "Aborted."
+    exit 0
+fi
+
 OS="$(uname -s)"
 
 # ── System packages (Linux only) ──────────────────────────────────────────────

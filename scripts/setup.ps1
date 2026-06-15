@@ -8,6 +8,29 @@ $ErrorActionPreference = "Stop"
 function Check-Command($name) { return !!(Get-Command $name -ErrorAction SilentlyContinue) }
 
 Write-Host "`n=== DragonFly – Environment Setup ===" -ForegroundColor Cyan
+Write-Host @"
+
+This script will install the following tools on your system:
+  - Node.js LTS        (JavaScript runtime)
+  - Rust + cargo       (via rustup)
+  - CMake              (build system)
+  - LLVM / clang       (required by whisper-rs bindgen)
+  - Visual Studio 2022 BuildTools with C++ workload
+    (MSVC compiler + Windows SDK headers)
+
+It modifies your PATH and sets the following environment variables:
+  LIBCLANG_PATH, BINDGEN_EXTRA_CLANG_ARGS
+
+Recommendation: If you are setting up a development environment for the
+first time, consider doing this inside a virtual machine to keep your host system clean.
+
+"@ -ForegroundColor White
+
+$confirm = Read-Host "Do you want to continue? [y/N]"
+if ($confirm -notmatch '^[Yy]$') {
+    Write-Host "Aborted." -ForegroundColor Yellow
+    exit 0
+}
 
 # ── Package manager ───────────────────────────────────────────────────────────
 $useChoco = $false
