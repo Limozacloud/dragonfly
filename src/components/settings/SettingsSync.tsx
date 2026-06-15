@@ -105,6 +105,9 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [remoteJoining, setRemoteJoining] = useState(false);
   const [remoteError, setRemoteError] = useState('');
 
+  const [showConnectConfirm, setShowConnectConfirm] = useState(false);
+  const [connectShared, setConnectShared] = useState(true);
+
   useEffect(() => {
     setIsSyncConnected(syncService.isConnected);
     if (syncService.isConnected) setSpaceUrl(syncService.serverUrl);
@@ -147,8 +150,8 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
     }
   };
 
-  const handleConnect = async () => {
-    if (!spaceUrl.trim() || !spaceKey.trim()) return;
+  const handleConnectConfirmed = async () => {
+    setShowConnectConfirm(false);
     setIsSyncing(true);
     try {
       const projectId = useProjectStore.getState().currentProjectId;
@@ -158,6 +161,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
         await useProjectStore.getState().updateProject(projectId, {
           syncUrl: spaceUrl.trim(),
           syncSpaceKey: spaceKey.trim(),
+          shared: connectShared,
         });
       }
       setHasSavedCredentials(true);
@@ -274,11 +278,11 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
           {/* ── NOT CONNECTED ── */}
           {syncView === 'setup' && (
             <>
-              {/* Section 1: Join */}
+              {/* Section 1: Sync this project */}
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium mb-1">{t('sync.joinTitle')}</p>
-                  <p className="text-xs text-muted-foreground mb-3">{t('sync.joinHint')}</p>
+                  <p className="text-sm font-medium mb-1">{t('sync.syncThisProject')}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{t('sync.syncThisProjectHint')}</p>
                 </div>
 
                 {/* Space URL paste shortcut */}
@@ -323,7 +327,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
 
                 <Button
                   className="w-full"
-                  onClick={handleConnect}
+                  onClick={() => { setConnectShared(true); setShowConnectConfirm(true); }}
                   disabled={isSyncing || !spaceUrl.trim() || spaceKeyStrength(spaceKey.trim()) === 'weak'}
                 >
                   <IconPlugConnected size={15} className="mr-2" />
@@ -669,6 +673,42 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Connect Confirmation Modal */}
+      <AppModal
+        isOpen={showConnectConfirm}
+        onClose={() => setShowConnectConfirm(false)}
+        title={t('sync.connectConfirmTitle')}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowConnectConfirm(false)}>
+              {t('task.cancel')}
+            </Button>
+            <Button onClick={handleConnectConfirmed}>
+              <IconPlugConnected size={15} className="mr-2" />
+              {t('sync.connectConfirmButton')}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {t('sync.connectConfirmDesc', { name: useProjectStore.getState().getCurrentProject()?.name ?? '' })}
+          </p>
+          <div className="flex items-start gap-3 border border-border rounded-md p-3">
+            <Switch
+              checked={connectShared}
+              onCheckedChange={setConnectShared}
+              className="mt-0.5 shrink-0"
+            />
+            <div>
+              <p className="text-sm font-medium">{t('sync.connectConfirmShareLabel')}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t('sync.connectConfirmShareHint')}</p>
+            </div>
+          </div>
+        </div>
+      </AppModal>
 
       {/* Delete Admin Credentials Modal */}
       <AppModal

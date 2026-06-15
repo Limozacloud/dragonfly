@@ -481,7 +481,14 @@
     "joinHint": "Introduceți URL-ul PocketBase și cheia spațiului furnizată de administratorul dvs.",
     "parseAndFill": "Completați din URL",
     "joinTitle": "Alătură-te unui spațiu",
-    "orEnterManually": "sau introduceți manual"
+    "orEnterManually": "sau introduceți manual",
+    "syncThisProject": "Sincronizați acest proiect cu PocketBase",
+    "syncThisProjectHint": "Încărcați și sincronizați acest proiect într-un spațiu PocketBase. Toate datele proiectului vor fi sincronizate.",
+    "connectConfirmTitle": "Sincronizați proiectul cu PocketBase",
+    "connectConfirmDesc": "\"{{name}}\" va fi încărcat și sincronizat continuu cu spațiul PocketBase.",
+    "connectConfirmShareLabel": "Faceți acest proiect descoperibil",
+    "connectConfirmShareHint": "Alți utilizatori cu cheia spațiului vor putea găsi și se alătura acestui proiect.",
+    "connectConfirmButton": "Pornire sincronizare"
   },
   "schema": {
     "appTooOld": "Versiune aplicatie depasita",

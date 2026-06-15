@@ -481,7 +481,14 @@
     "joinHint": "Wprowadź URL PocketBase i klucz przestrzeni podany przez administratora.",
     "parseAndFill": "Wypełnij z URL",
     "joinTitle": "Dołącz do przestrzeni",
-    "orEnterManually": "lub wprowadź ręcznie"
+    "orEnterManually": "lub wprowadź ręcznie",
+    "syncThisProject": "Synchronizuj ten projekt z PocketBase",
+    "syncThisProjectHint": "Prześlij i synchronizuj ten projekt w przestrzeni PocketBase. Wszystkie dane projektu będą synchronizowane.",
+    "connectConfirmTitle": "Synchronizuj projekt z PocketBase",
+    "connectConfirmDesc": "\"{{name}}\" zostanie przesłany i będzie stale synchronizowany z przestrzenią PocketBase.",
+    "connectConfirmShareLabel": "Udostępnij ten projekt do odkrycia",
+    "connectConfirmShareHint": "Inni użytkownicy z kluczem przestrzeni będą mogli znaleźć i dołączyć do tego projektu.",
+    "connectConfirmButton": "Rozpocznij synchronizację"
   },
   "schema": {
     "appTooOld": "Wersja aplikacji nieaktualna",

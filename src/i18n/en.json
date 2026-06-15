@@ -481,7 +481,14 @@
     "joinHint": "Enter the PocketBase URL and Space Key provided by your admin.",
     "parseAndFill": "Fill from URL",
     "joinTitle": "Join a space",
-    "orEnterManually": "or enter manually"
+    "orEnterManually": "or enter manually",
+    "syncThisProject": "Sync this project to PocketBase",
+    "syncThisProjectHint": "Upload and sync this project to a PocketBase space. All project data (tasks, notes, releases, etc.) will be kept in sync.",
+    "connectConfirmTitle": "Sync project to PocketBase",
+    "connectConfirmDesc": "This will upload and continuously sync \"{{name}}\" to the PocketBase space. All project data will be synchronized.",
+    "connectConfirmShareLabel": "Make this project discoverable",
+    "connectConfirmShareHint": "Other users with the Space Key can find and join this project.",
+    "connectConfirmButton": "Start sync"
   },
   "schema": {
     "appTooOld": "App version outdated",
