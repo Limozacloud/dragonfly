@@ -26,10 +26,6 @@ const PB_PERSONAL_TODOS = 'df_personal_todos';
 const PB_PERSONAL_SETTINGS = 'df_personal_settings';
 const SYNC_USER_EMAIL = 'sync@dragonfly.local';
 
-// Bumped whenever the PocketBase collection schema changes.
-// Admins must run "Upgrade Schema" when this version is higher than the server's sync_schema_version.
-export const SYNC_SCHEMA_VERSION = 3;
-
 // PocketBase collection field descriptor (shared between schema approaches)
 type PbField = Record<string, unknown> & { name: string };
 
@@ -55,22 +51,12 @@ class SyncService {
   private unsubscribes: (() => void)[] = [];
   private failedPushQueue = new Map<string, { table: LocalTable; id: string; retries: number }>();
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
-  private _serverSyncSchemaVersion: number = 0;
-
   get isConnected() {
     return this.connected;
   }
 
   get serverUrl() {
     return this.url;
-  }
-
-  get serverSyncSchemaVersion() {
-    return this._serverSyncSchemaVersion;
-  }
-
-  get isSchemaMismatch() {
-    return this._serverSyncSchemaVersion > 0 && this._serverSyncSchemaVersion < SYNC_SCHEMA_VERSION;
   }
 
   get pocketBase(): PocketBase | null {
@@ -373,7 +359,7 @@ class SyncService {
     await this.ensureCollection(pb, PB_META, this.getMetaFields(), metaAuthRules);
 
     // Write schema version records
-    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)], ['sync_schema_version', String(SYNC_SCHEMA_VERSION)]]) {
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)]]) {
       try {
         const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
         await pb.collection(PB_META).update(existing.id, { value });
@@ -459,15 +445,6 @@ class SyncService {
       }
     }
 
-    // Update sync_schema_version after successful migration
-    try {
-      const existing = await pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
-      await pb.collection(PB_META).update(existing.id, { value: String(SYNC_SCHEMA_VERSION) });
-    } catch {
-      await pb.collection(PB_META).create({ key: 'sync_schema_version', value: String(SYNC_SCHEMA_VERSION) });
-    }
-    report.push(`[OK] sync_schema_version updated to v${SYNC_SCHEMA_VERSION}`);
-
     pb.authStore.clear();
     return report;
   }
@@ -483,28 +460,9 @@ class SyncService {
     await this.ensureAuth();
     this.connected = true;
 
-    // Check server sync schema version before syncing
-    await this.checkServerSyncSchemaVersion();
-    if (this.isSchemaMismatch) {
-      this.log(`[WARN] Server sync schema v${this._serverSyncSchemaVersion} < app v${SYNC_SCHEMA_VERSION} — sync blocked`);
-      window.dispatchEvent(new Event('dragonfly-sync'));
-      return;
-    }
-
     await this.fullSync();
     await this.subscribe();
     this.log('[OK] Connected & subscribed');
-  }
-
-  private async checkServerSyncSchemaVersion(): Promise<void> {
-    if (!this.pb) return;
-    try {
-      const rec = await this.pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
-      this._serverSyncSchemaVersion = parseInt(rec.value as string, 10) || 1;
-    } catch {
-      // Key doesn't exist yet → old server = v1
-      this._serverSyncSchemaVersion = 1;
-    }
   }
 
   // Always re-authenticate against the server (never trust localStorage-cached token)
@@ -536,10 +494,6 @@ class SyncService {
 
   async fullSync(): Promise<void> {
     if (!this.pb || !this.syncKey) return;
-    if (this.isSchemaMismatch) {
-      this.log(`[WARN] Sync blocked — server schema v${this._serverSyncSchemaVersion} < required v${SYNC_SCHEMA_VERSION}`);
-      return;
-    }
 
     // Re-auth if token expired
     await this.ensureAuth();
@@ -1159,23 +1113,6 @@ class SyncService {
     }
   }
 
-  async fetchRemoteSyncSchemaVersion(url: string, spaceKey: string): Promise<number> {
-    const pb = new PocketBase(url);
-    try {
-      await pb.collection('users').authWithPassword(SYNC_USER_EMAIL, spaceKey);
-      try {
-        const record = await pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
-        return parseInt(record.value as string, 10) || 1;
-      } catch {
-        return 1; // old server without sync_schema_version = v1
-      }
-    } catch {
-      return 1;
-    } finally {
-      pb.authStore.clear();
-    }
-  }
-
   // Upgrade remote schema (admin auth required)
   async upgradeRemoteSchema(
     url: string,
@@ -1190,7 +1127,7 @@ class SyncService {
     const pb = new PocketBase(url);
     await this.adminAuth(pb, adminEmail, adminPassword);
 
-    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)], ['sync_schema_version', String(SYNC_SCHEMA_VERSION)]]) {
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)]]) {
       try {
         const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
         await pb.collection(PB_META).update(existing.id, { value });
@@ -1199,7 +1136,7 @@ class SyncService {
       }
     }
 
-    report.push(`[OK] Remote schema versions updated (data: ${SCHEMA_VERSION}, sync: ${SYNC_SCHEMA_VERSION})`);
+    report.push(`[OK] Remote schema_version set to ${SCHEMA_VERSION}`);
     pb.authStore.clear();
     return report;
   }

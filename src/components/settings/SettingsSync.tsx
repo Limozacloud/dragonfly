@@ -7,7 +7,6 @@ import {
 } from '@tabler/icons-react';
 import { syncService } from '../../services/syncService';
 import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION } from '../../services/database';
-import { SYNC_SCHEMA_VERSION } from '../../services/syncService';
 import { generateSpaceUrl, parseSpaceUrl } from '../../services/spaceUrl';
 import { useProjectStore } from '@/stores/projectStore';
 import { Button } from '../ui/button';
@@ -79,9 +78,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
   const [isSyncConnected, setIsSyncConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSchemaMismatch, setIsSchemaMismatch] = useState(false);
-  const [isUpgradingSchema, setIsUpgradingSchema] = useState(false);
-  const [schemaUpgradeStatus, setSchemaUpgradeStatus] = useState('');
 
   const [hasAdminCredentials, setHasAdminCredentials] = useState(false);
   const [displaySpaceUrl, setDisplaySpaceUrl] = useState('');
@@ -138,14 +134,12 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       }
 
       setIsSyncConnected(syncService.isConnected);
-      setIsSchemaMismatch(syncService.isSchemaMismatch);
       if (syncService.isConnected && syncService.serverUrl) setSpaceUrl(syncService.serverUrl);
 
     })();
 
     const interval = setInterval(() => {
       setIsSyncConnected(syncService.isConnected);
-      setIsSchemaMismatch(syncService.isSchemaMismatch);
     }, 2000);
     return () => clearInterval(interval);
   }, []);
@@ -185,24 +179,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
     }
   };
 
-  const handleSchemaUpgrade = async () => {
-    if (!spaceUrl || !adminEmail.trim() || !adminPassword.trim()) return;
-    setIsUpgradingSchema(true);
-    setSchemaUpgradeStatus('');
-    try {
-      await syncService.upgradeRemoteSchema(spaceUrl, adminEmail.trim(), adminPassword.trim(), spaceKey);
-      setSchemaUpgradeStatus(t('schema.syncSchemaUpgradeSuccess'));
-      // Reconnect so the mismatch flag is cleared
-      const projId = useProjectStore.getState().currentProjectId;
-      await syncService.connect(spaceUrl, spaceKey, projId || undefined);
-      setIsSchemaMismatch(syncService.isSchemaMismatch);
-      setIsSyncConnected(syncService.isConnected);
-    } catch (err) {
-      setSchemaUpgradeStatus(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsUpgradingSchema(false);
-    }
-  };
 
   const handleSetupServer = async () => {
     if (!setupUrl.trim() || !adminEmail.trim() || !adminPassword.trim() || spaceKeyStrength(setupSpaceKey.trim()) === 'weak') return;
@@ -419,39 +395,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                   {isSyncConnected ? t('sync.live') : t('sync.offline')}
                 </span>
               </div>
-
-              {/* Schema mismatch banner */}
-              {isSchemaMismatch && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-3 space-y-2">
-                  <p className="text-sm font-medium text-red-800 flex items-center gap-1.5">
-                    <IconAlertTriangle size={16} />
-                    {t('schema.syncSchemaMismatch')}
-                  </p>
-                  <p className="text-xs text-red-700">
-                    {t('schema.syncSchemaMismatchMessage', {
-                      serverVersion: syncService.serverSyncSchemaVersion,
-                      appVersion: SYNC_SCHEMA_VERSION,
-                    })}
-                  </p>
-                  {isAdmin ? (
-                    <div className="space-y-1.5 pt-1">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={handleSchemaUpgrade}
-                        disabled={isUpgradingSchema}
-                      >
-                        {isUpgradingSchema ? t('common.loading') : t('schema.upgradeAsAdmin')}
-                      </Button>
-                      {schemaUpgradeStatus && (
-                        <p className="text-xs text-red-600">{schemaUpgradeStatus}</p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-red-600">{t('schema.syncSchemaContactAdmin')}</p>
-                  )}
-                </div>
-              )}
 
               {/* Space URL share */}
               {displaySpaceUrl && (

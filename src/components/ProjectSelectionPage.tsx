@@ -5,7 +5,6 @@ import { open } from '@tauri-apps/plugin-shell';
 import { useProjectStore } from '../stores/projectStore';
 import { syncService } from '../services/syncService';
 import { SCHEMA_VERSION, getProjectAdminCredentials, setProjectAdminCredentials } from '../services/database';
-import { SYNC_SCHEMA_VERSION } from '../services/syncService';
 import { parseSpaceUrl } from '../services/spaceUrl';
 import { Project } from '../types';
 import { Button } from './ui/button';
@@ -146,18 +145,6 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
       const effectiveRemote = remoteVersion ?? 0;
 
       if (effectiveRemote === SCHEMA_VERSION) {
-        // Data schema matches → also check PB collections schema
-        const remoteSyncVersion = await syncService.fetchRemoteSyncSchemaVersion(project.syncUrl, project.syncSpaceKey);
-        if (remoteSyncVersion < SYNC_SCHEMA_VERSION) {
-          setSchemaConflict({ remote: remoteSyncVersion, local: SYNC_SCHEMA_VERSION, projectId: id });
-          const creds = await getProjectAdminCredentials(id);
-          if (creds) {
-            setSchemaAdminEmail(creds.email);
-            setSchemaAdminPassword(creds.password);
-          }
-          setShowSchemaServerTooOld(true);
-          return;
-        }
         onSelectProject(id);
         return;
       }
@@ -249,15 +236,6 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
       if (effectiveRemote < SCHEMA_VERSION) {
         // Server older (or no df_meta) → show upgrade dialog
         setSchemaConflict({ remote: effectiveRemote, local: SCHEMA_VERSION, projectId: '' });
-        setShowSchemaServerTooOld(true);
-        setIsFetching(false);
-        return;
-      }
-
-      // Data schema matches → also check PB collections schema
-      const remoteSyncVersion = await syncService.fetchRemoteSyncSchemaVersion(parsed.serverUrl, parsed.spaceKey);
-      if (remoteSyncVersion < SYNC_SCHEMA_VERSION) {
-        setSchemaConflict({ remote: remoteSyncVersion, local: SYNC_SCHEMA_VERSION, projectId: '' });
         setShowSchemaServerTooOld(true);
         setIsFetching(false);
         return;
