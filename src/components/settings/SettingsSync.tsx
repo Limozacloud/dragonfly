@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import {
   IconCheck, IconCloud, IconCloudOff, IconRefresh, IconSettings,
   IconInfoCircle, IconAlertTriangle, IconCopy, IconLink,
-  IconLoader2, IconEye, IconEyeOff, IconPlugConnected,
+  IconLoader2, IconEye, IconEyeOff, IconPlugConnected, IconKey,
 } from '@tabler/icons-react';
 import { syncService } from '../../services/syncService';
-import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION, getConfig, setConfig } from '../../services/database';
+import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION } from '../../services/database';
 import { SYNC_SCHEMA_VERSION } from '../../services/syncService';
 import { generateSpaceUrl, parseSpaceUrl } from '../../services/spaceUrl';
 import { useProjectStore } from '@/stores/projectStore';
@@ -110,14 +110,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [connectShared, setConnectShared] = useState(false);
   const [connectError, setConnectError] = useState('');
 
-  const [identityUserId, setIdentityUserId] = useState('');
-  const [identityEmail, setIdentityEmail] = useState('');
-  const [identityPassword, setIdentityPassword] = useState('');
-  const [identityMode, setIdentityMode] = useState<'login' | 'register'>('login');
-  const [identityLoading, setIdentityLoading] = useState(false);
-  const [identityError, setIdentityError] = useState('');
-  const [identitySuccess, setIdentitySuccess] = useState('');
-  const [remoteProjectHasOwner, setRemoteProjectHasOwner] = useState(false);
+  const [projectPassphraseCopied, setProjectPassphraseCopied] = useState(false);
 
   useEffect(() => {
     setIsSyncConnected(syncService.isConnected);
@@ -148,13 +141,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       setIsSchemaMismatch(syncService.isSchemaMismatch);
       if (syncService.isConnected && syncService.serverUrl) setSpaceUrl(syncService.serverUrl);
 
-      const savedUserId = await getConfig('pb_identity_user_id');
-      if (savedUserId) setIdentityUserId(savedUserId);
-
-      if (syncService.isConnected) {
-        const hasOwner = await syncService.getRemoteProjectHasOwner();
-        setRemoteProjectHasOwner(hasOwner);
-      }
     })();
 
     const interval = setInterval(() => {
@@ -275,7 +261,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
     setRemoteProjects([]);
     setRemoteSelectedIds(new Set());
     try {
-      const result = await syncService.fetchRemoteProjects(spaceUrl.trim(), spaceKey.trim(), identityUserId || undefined);
+      const result = await syncService.fetchRemoteProjects(spaceUrl.trim(), spaceKey.trim());
       setRemoteProjects(result);
     } catch (err) {
       setRemoteError(String(err));
@@ -515,99 +501,39 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                 );
               })()}
 
-              {/* Personal Identity */}
-              <div className="border border-border rounded-md p-3 space-y-3">
-                <div>
-                  <p className="text-sm font-medium">{t('sync.personalIdentity')}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('sync.personalIdentityHint')}</p>
-                </div>
-                {identityUserId ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-green-600">
-                      <IconCheck size={14} />
-                      <span>{identityEmail || t('sync.personalIdentitySet')}</span>
+              {/* Project Passphrase */}
+              {(() => {
+                const project = useProjectStore.getState().getCurrentProject();
+                const passphrase = project?.projectPassphrase || '';
+                if (!passphrase) return null;
+                return (
+                  <div className="border border-border rounded-md p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <IconKey size={14} className="text-muted-foreground" />
+                      <p className="text-sm font-medium">{t('sync.projectPassphrase')}</p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs text-destructive hover:text-destructive"
-                      onClick={async () => {
-                        await setConfig('pb_identity_user_id', '');
-                        setIdentityUserId('');
-                        setIdentityEmail('');
-                        setIdentityPassword('');
-                        if (syncService.isConnected) syncService.fullSync().catch(() => {});
-                      }}
-                    >
-                      {t('sync.personalIdentityRemove')}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {remoteProjectHasOwner ? (
-                      <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                        {t('sync.personalIdentityOwnerExists')}
-                      </p>
-                    ) : (
-                      <div className="flex gap-1 border border-border rounded-md overflow-hidden text-xs">
-                        <button
-                          className={`flex-1 py-1.5 ${identityMode === 'login' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                          onClick={() => { setIdentityMode('login'); setIdentityError(''); }}
-                        >{t('sync.personalIdentityLogin')}</button>
-                        <button
-                          className={`flex-1 py-1.5 ${identityMode === 'register' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                          onClick={() => { setIdentityMode('register'); setIdentityError(''); }}
-                        >{t('sync.personalIdentityRegister')}</button>
-                      </div>
+                    <p className="text-xs text-muted-foreground">{t('sync.projectPassphraseHint')}</p>
+                    <div className="flex gap-2">
+                      <Input value={passphrase} readOnly className="flex-1 font-mono text-xs" />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(passphrase);
+                          setProjectPassphraseCopied(true);
+                          setTimeout(() => setProjectPassphraseCopied(false), 2000);
+                        }}
+                        title={t('sync.projectPassphraseCopy')}
+                      >
+                        {projectPassphraseCopied ? <IconCheck size={16} className="text-green-500" /> : <IconCopy size={16} />}
+                      </Button>
+                    </div>
+                    {projectPassphraseCopied && (
+                      <p className="text-xs text-green-500">{t('sync.projectPassphraseCopied')}</p>
                     )}
-                    <Input
-                      type="email"
-                      placeholder="email@example.com"
-                      value={identityEmail}
-                      onChange={(e) => { setIdentityEmail(e.target.value); setIdentityError(''); }}
-                      className="text-sm"
-                    />
-                    <Input
-                      type="password"
-                      placeholder={t('sync.personalIdentityPasswordPlaceholder')}
-                      value={identityPassword}
-                      onChange={(e) => { setIdentityPassword(e.target.value); setIdentityError(''); }}
-                      className="text-sm"
-                    />
-                    {identityError && <p className="text-xs text-red-500">{identityError}</p>}
-                    {identitySuccess && <p className="text-xs text-green-600">{identitySuccess}</p>}
-                    <Button
-                      size="sm"
-                      className="w-full"
-                      disabled={!identityEmail.trim() || !identityPassword.trim() || identityLoading}
-                      onClick={async () => {
-                        setIdentityLoading(true);
-                        setIdentityError('');
-                        setIdentitySuccess('');
-                        try {
-                          const userId = identityMode === 'register'
-                            ? await syncService.registerIdentity(identityEmail.trim(), identityPassword.trim())
-                            : await syncService.loginIdentity(identityEmail.trim(), identityPassword.trim());
-                          await setConfig('pb_identity_user_id', userId);
-                          setIdentityUserId(userId);
-                          setIdentityPassword('');
-                          if (syncService.isConnected) syncService.fullSync().catch(() => {});
-                        } catch (err) {
-                          setIdentityError(err instanceof Error ? err.message : String(err));
-                        } finally {
-                          setIdentityLoading(false);
-                        }
-                      }}
-                    >
-                      {identityLoading
-                        ? t('common.loading')
-                        : identityMode === 'register'
-                          ? t('sync.personalIdentityRegister')
-                          : t('sync.personalIdentityLogin')}
-                    </Button>
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
               <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
                 <span>{t('sync.schemaVersion')}</span>

@@ -28,7 +28,7 @@ const SYNC_USER_EMAIL = 'sync@dragonfly.local';
 
 // Bumped whenever the PocketBase collection schema changes.
 // Admins must run "Upgrade Schema" when this version is higher than the server's sync_schema_version.
-export const SYNC_SCHEMA_VERSION = 2;
+export const SYNC_SCHEMA_VERSION = 3;
 
 // PocketBase collection field descriptor (shared between schema approaches)
 type PbField = Record<string, unknown> & { name: string };
@@ -266,7 +266,7 @@ class SyncService {
   private getProjectFields() {
     return [
       ...this.getDataFields(),
-      { name: 'owner_id', type: 'text', required: false },
+      { name: 'project_key', type: 'text', required: false },
     ];
   }
 
@@ -356,7 +356,7 @@ class SyncService {
       await this.ensureCollection(pb, name, this.getDataFields(), authRules);
     }
 
-    // Projects collection (includes owner_id for personal identity)
+    // Projects collection (project_key for private project discovery)
     await this.ensureCollection(pb, PB_PROJECTS, this.getProjectFields(), authRules);
 
     // Attachments collection
@@ -900,28 +900,11 @@ class SyncService {
       );
       if (localRows.length === 0) return;
       const local = localRows[0];
-      const isShared = local.shared !== undefined ? !!local.shared : true;
-      const identityHash = await getConfig('pb_identity_user_id');
+      const passphrase = (local.project_passphrase as string) || '';
+      const projectKey = passphrase ? await this.hashProjectKey(passphrase) : '';
 
       // Check if project already exists on remote
       const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
-
-      // If not shared AND no personal identity → old behavior: remove from PB entirely
-      if (!isShared && !identityHash) {
-        if (existing) {
-          try {
-            await this.pb!.collection(PB_PROJECTS).delete(existing.id);
-            this.log('[OK] project: removed from remote (not shared, no identity)');
-          } catch (err: unknown) {
-            logToService('WARN', 'sync: delete project from PB failed: ' + String(err));
-          }
-        }
-        return;
-      }
-
-      // If not shared but HAS identity → keep on PB with owner_id (private, only owner can find)
-      // If shared → keep on PB (discoverable by all)
-      const ownerIdValue = identityHash || '';
 
       const projectData = {
         id: local.id,
@@ -946,12 +929,12 @@ class SyncService {
               [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteProject.updated_at, this.projectId]
             );
             this.log('[OK] project: pulled metadata update');
-          } else if (local.updated_at > remoteUpdatedAt || (existing.owner_id as string | undefined) !== ownerIdValue) {
-            // Local is newer OR owner_id changed → push
+          } else if (local.updated_at > remoteUpdatedAt || (existing.project_key as string | undefined) !== projectKey) {
+            // Local is newer OR project_key changed → push
             const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
             await this.pb!.collection(PB_PROJECTS).update(existing.id, {
               data: encryptedData,
-              owner_id: ownerIdValue,
+              project_key: projectKey,
               created_at: local.created_at,
               updated_at: local.updated_at,
             });
@@ -962,7 +945,7 @@ class SyncService {
           const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
           await this.pb!.collection(PB_PROJECTS).update(existing.id, {
             data: encryptedData,
-            owner_id: ownerIdValue,
+            project_key: projectKey,
             created_at: local.created_at,
             updated_at: local.updated_at,
           });
@@ -973,7 +956,7 @@ class SyncService {
         await this.pb!.collection(PB_PROJECTS).create({
           local_id: this.projectId,
           data: encryptedData,
-          owner_id: ownerIdValue,
+          project_key: projectKey,
           created_at: local.created_at,
           updated_at: local.updated_at,
         });
@@ -984,57 +967,28 @@ class SyncService {
     }
   }
 
-  // Register a new personal account on the PocketBase server
-  async registerIdentity(email: string, password: string): Promise<string> {
-    if (!this.pb) throw new Error('Not connected');
-    const pb = new PocketBase(this.url);
-    try {
-      const user = await pb.collection('users').create({ email, password, passwordConfirm: password });
-      return user.id as string;
-    } catch (err: unknown) {
-      const pbErr = err as { response?: { data?: Record<string, { message?: string }> }; status?: number; message?: string };
-      if (pbErr?.response?.data) {
-        const fieldErrors = Object.entries(pbErr.response.data)
-          .map(([field, e]) => `${field}: ${e?.message ?? ''}`)
-          .join(', ');
-        throw new Error(fieldErrors || pbErr.message || String(err));
-      }
-      throw new Error(pbErr?.message || String(err));
-    } finally {
-      pb.authStore.clear();
-    }
+  // Hash a project passphrase + spaceKey to produce a server-specific lookup key
+  private async hashProjectKey(passphrase: string): Promise<string> {
+    const data = new TextEncoder().encode(passphrase + ':' + this.spaceKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
-  // Login with an existing personal account — returns the stable PB user ID
-  async loginIdentity(email: string, password: string): Promise<string> {
-    if (!this.pb) throw new Error('Not connected');
-    const pb = new PocketBase(this.url);
-    try {
-      const auth = await pb.collection('users').authWithPassword(email, password);
-      return auth.record.id as string;
-    } catch (err: unknown) {
-      const pbErr = err as { status?: number; message?: string };
-      if (pbErr?.status === 400) throw new Error('Invalid email or password.');
-      throw new Error(pbErr?.message || String(err));
-    } finally {
-      pb.authStore.clear();
-    }
+  // Static version for use outside a connected instance (e.g. fetchRemoteProjects)
+  private static async hashProjectKeyStatic(passphrase: string, spaceKey: string): Promise<string> {
+    const data = new TextEncoder().encode(passphrase + ':' + spaceKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
   }
 
-  // Returns true if the current connected project already has an owner_id set on the server.
-  // Used to decide whether to offer Register (no owner) or only Login (owner exists).
-  async getRemoteProjectHasOwner(): Promise<boolean> {
-    if (!this.pb || !this.projectId) return false;
-    try {
-      const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
-      return !!(existing && (existing.owner_id as string));
-    } catch {
-      return false;
-    }
-  }
-
-  // Fetch all remote projects (for Join flow) without modifying local state
-  async fetchRemoteProjects(url: string, spaceKey: string, ownerHash?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
+  // Fetch all remote projects (for Join flow) without modifying local state.
+  // Without passphrase: returns projects with no project_key (discoverable).
+  // With passphrase: also returns the project whose project_key matches hash(passphrase).
+  async fetchRemoteProjects(url: string, spaceKey: string, passphrase?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
     const pb = new PocketBase(url);
     const syncKey = await deriveSyncKey(spaceKey, url);
 
@@ -1044,11 +998,15 @@ class SyncService {
       const remoteRecords = await pb.collection(PB_PROJECTS).getFullList();
       const projects: { id: string; name: string; description: string; color: string; isPrivate: boolean }[] = [];
 
+      const passphraseHash = passphrase
+        ? await SyncService.hashProjectKeyStatic(passphrase, spaceKey)
+        : null;
+
       let decryptFailed = 0;
       for (const remote of remoteRecords) {
-        // Filter: show public (no owner_id) + own (owner_id matches)
-        const remoteOwnerId = (remote.owner_id as string) || '';
-        if (remoteOwnerId !== '' && remoteOwnerId !== ownerHash) continue;
+        const remoteKey = (remote.project_key as string) || '';
+        // Show: public projects (no project_key) OR passphrase match
+        if (remoteKey !== '' && remoteKey !== passphraseHash) continue;
 
         try {
           const decryptedData = await decrypt(remote.data, syncKey);
@@ -1058,7 +1016,7 @@ class SyncService {
             name: record.name || 'Unnamed',
             description: record.description || '',
             color: record.color || '#0077B6',
-            isPrivate: remoteOwnerId !== '',
+            isPrivate: remoteKey !== '',
           });
         } catch {
           decryptFailed++;
@@ -1232,15 +1190,16 @@ class SyncService {
     const pb = new PocketBase(url);
     await this.adminAuth(pb, adminEmail, adminPassword);
 
-    // Update schema_version record (admin auth allows writing to df_meta)
-    try {
-      const existing = await pb.collection(PB_META).getFirstListItem('key="schema_version"');
-      await pb.collection(PB_META).update(existing.id, { value: String(SCHEMA_VERSION) });
-    } catch {
-      await pb.collection(PB_META).create({ key: 'schema_version', value: String(SCHEMA_VERSION) });
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)], ['sync_schema_version', String(SYNC_SCHEMA_VERSION)]]) {
+      try {
+        const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
+        await pb.collection(PB_META).update(existing.id, { value });
+      } catch {
+        await pb.collection(PB_META).create({ key, value });
+      }
     }
 
-    report.push(`[OK] Remote schema_version set to ${SCHEMA_VERSION}`);
+    report.push(`[OK] Remote schema versions updated (data: ${SCHEMA_VERSION}, sync: ${SYNC_SCHEMA_VERSION})`);
     pb.authStore.clear();
     return report;
   }

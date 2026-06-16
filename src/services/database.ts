@@ -2,7 +2,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { log } from './logService';
 import type { AppConfigKey } from '../types/db';
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 let db: Database | null = null;
 let dbPromise: Promise<Database> | null = null;
@@ -40,6 +40,7 @@ const TABLE_SCHEMAS: Record<string, Record<string, string>> = {
     sync_url: "TEXT DEFAULT ''",
     sync_space_key: "TEXT DEFAULT ''",
     shared: 'INTEGER DEFAULT 0',
+    project_passphrase: "TEXT DEFAULT ''",
     created_at: 'TEXT NOT NULL',
     updated_at: 'TEXT NOT NULL',
     deleted: 'INTEGER DEFAULT 0',

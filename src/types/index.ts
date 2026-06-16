@@ -10,6 +10,7 @@ export interface Project {
   syncUrl: string;
   syncSpaceKey: string;
   shared: boolean;
+  projectPassphrase: string;
   createdAt: string;
   updatedAt: string;
 }

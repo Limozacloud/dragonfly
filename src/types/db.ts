@@ -8,6 +8,7 @@ export interface ProjectRow {
   sync_url: string;
   sync_space_key: string;
   shared: number; // 0 | 1
+  project_passphrase: string;
   created_at: string;
   updated_at: string;
   deleted: number;
@@ -126,8 +127,7 @@ export type AppConfigKey =
   | 'reminder_sync_project_id'
   | 'reminder_sync_secret'
   | 'reminder_sync_smtp'
-  | 'reminder_settings_updated_at'
-  | 'pb_identity_user_id';
+  | 'reminder_settings_updated_at';
 
 export interface AppConfigRow {
   key: AppConfigKey;

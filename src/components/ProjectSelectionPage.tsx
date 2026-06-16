@@ -36,7 +36,8 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
   const [joinSpaceUrl, setJoinSpaceUrl] = useState('');
   const [parsedServerUrl, setParsedServerUrl] = useState('');
   const [parsedSpaceKey, setParsedSpaceKey] = useState('');
-  const [remoteProjects, setRemoteProjects] = useState<Array<{ id: string; name: string; description: string; color: string }>>([]);
+  const [joinPassphrase, setJoinPassphrase] = useState('');
+  const [remoteProjects, setRemoteProjects] = useState<Array<{ id: string; name: string; description: string; color: string; isPrivate: boolean }>>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isFetching, setIsFetching] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -262,7 +263,7 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
         return;
       }
 
-      const result = await syncService.fetchRemoteProjects(parsed.serverUrl, parsed.spaceKey);
+      const result = await syncService.fetchRemoteProjects(parsed.serverUrl, parsed.spaceKey, joinPassphrase.trim() || undefined);
       setRemoteProjects(result);
       if (result.length === 0) {
         setJoinError(t('project.noProjectsFound'));
@@ -297,13 +298,15 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
     setJoinError('');
 
     try {
-      await joinProjects(toJoin, parsedServerUrl, parsedSpaceKey);
+      const privateProject = toJoin.find(p => p.isPrivate);
+      await joinProjects(toJoin, parsedServerUrl, parsedSpaceKey, privateProject ? joinPassphrase.trim() : undefined);
       setShowJoinModal(false);
       setRemoteProjects([]);
       setSelectedIds(new Set());
       setJoinSpaceUrl('');
       setParsedServerUrl('');
       setParsedSpaceKey('');
+      setJoinPassphrase('');
     } catch (err) {
       setJoinError(String(err));
     } finally {
@@ -316,6 +319,7 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
     setRemoteProjects([]);
     setSelectedIds(new Set());
     setJoinError('');
+    setJoinPassphrase('');
   };
 
   return (
@@ -509,6 +513,17 @@ function ProjectSelectionPage({ onSelectProject }: ProjectSelectionPageProps) {
             {joinSpaceUrl.trim() && !isSpaceUrlValid && (
               <p className="text-xs text-amber-500 mt-1">{t('sync.invalidSpaceUrl')}</p>
             )}
+          </div>
+
+          <div>
+            <Label className="mb-2 block">{t('sync.projectPrivateCode')}</Label>
+            <Input
+              placeholder={t('sync.projectPrivateCodePlaceholder')}
+              value={joinPassphrase}
+              onChange={(e) => setJoinPassphrase(e.target.value)}
+              disabled={remoteProjects.length > 0}
+            />
+            <p className="text-xs text-muted-foreground mt-1">{t('sync.projectPrivateCodeHint')}</p>
           </div>
 
           {remoteProjects.length === 0 && (
