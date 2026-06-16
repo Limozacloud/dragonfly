@@ -10,7 +10,11 @@
       "allow": [
         { "path": "$APPDATA/**" },
         { "path": "$RESOURCE/**" },
-        { "path": "../data/**" }
+        { "path": "../data/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$HOME/**" }
       ]
     },
     "fs:allow-appdata-read-recursive",

@@ -95,6 +95,7 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+  const prevNoteContentRef = useRef<string | undefined>();
   const [tocOpen, setTocOpen] = useState(false);
   const [changeCounter, setChangeCounter] = useState(0);
 
@@ -342,6 +343,16 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
       setEditorKey((k) => k + 1);
     }
   }, [selectedNoteId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-initialize editor when sync resolves previously unresolved attachment URLs
+  useEffect(() => {
+    const content = selectedNote?.content;
+    const prev = prevNoteContentRef.current;
+    prevNoteContentRef.current = content;
+    if (prev?.includes('dragonfly-attachment://') && content && !content.includes('dragonfly-attachment://')) {
+      setEditorKey((k) => k + 1);
+    }
+  }, [selectedNote?.content]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const switchToEdit = () => {
     setIsEditing(true);
