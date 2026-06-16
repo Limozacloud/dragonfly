@@ -37,6 +37,13 @@ fi
 
 OS="$(uname -s)"
 
+# ── apt check (Linux only) ────────────────────────────────────────────────────
+if [[ "$OS" == "Linux" ]] && ! command -v apt-get &>/dev/null; then
+    echo -e "${RED}[ERROR] This script only supports apt-based systems (Ubuntu/Debian).${NC}"
+    echo -e "${YELLOW}        Install the required packages manually for your distribution.${NC}"
+    exit 1
+fi
+
 # ── System packages (Linux only) ──────────────────────────────────────────────
 if [[ "$OS" == "Linux" ]]; then
     PKGS=()
