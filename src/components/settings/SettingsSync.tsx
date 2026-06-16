@@ -424,7 +424,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
               {/* Discoverable toggle */}
               {(() => {
                 const project = useProjectStore.getState().getCurrentProject();
-                const isShared = project?.shared ?? true;
+                const isShared = project?.shared ?? false;
                 return (
                   <div className="flex items-start gap-3 border border-border rounded-md p-3">
                     <Switch
@@ -448,7 +448,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
               {(() => {
                 const project = useProjectStore.getState().getCurrentProject();
                 const passphrase = project?.projectPassphrase || '';
-                if (!passphrase) return null;
                 return (
                   <div className="border border-border rounded-md p-3 space-y-2">
                     <div className="flex items-center gap-2">

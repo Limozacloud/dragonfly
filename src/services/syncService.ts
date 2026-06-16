@@ -7,6 +7,7 @@ import { SCHEMA_VERSION } from './database';
 import { deriveSyncKey, encrypt, decrypt, deriveReminderEncKey, hashSecret } from './crypto';
 import { log as logToService, type LogLevel } from './logService';
 import { PB_PRESENCE, getPresenceFields } from './presenceService';
+import { useProjectStore } from '../stores/projectStore';
 
 type LocalTable = 'tasks' | 'releases' | 'users' | 'notes' | 'scratchpads';
 
@@ -253,6 +254,7 @@ class SyncService {
     return [
       ...this.getDataFields(),
       { name: 'project_key', type: 'text', required: false },
+      { name: 'shared', type: 'bool', required: false },
     ];
   }
 
@@ -854,8 +856,16 @@ class SyncService {
       );
       if (localRows.length === 0) return;
       const local = localRows[0];
-      const passphrase = (local.project_passphrase as string) || '';
-      const projectKey = passphrase ? await this.hashProjectKey(passphrase) : '';
+      let passphrase = (local.project_passphrase as string) || '';
+      if (!passphrase) {
+        const uuid = crypto.randomUUID();
+        const parts = uuid.split('-');
+        passphrase = `${parts[0]}-${parts[1]}-${parts[2]}`;
+        await db.execute('UPDATE projects SET project_passphrase = ? WHERE id = ?', [passphrase, this.projectId]);
+        useProjectStore.getState().loadProjects();
+      }
+      const projectKey = await this.hashProjectKey(passphrase);
+      const isShared = !!local.shared;
 
       // Check if project already exists on remote
       const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
@@ -875,20 +885,22 @@ class SyncService {
           const decryptedRemote = await decrypt(existing.data, this.syncKey);
           const remoteProject = JSON.parse(decryptedRemote);
           const remoteUpdatedAt = remoteProject.updated_at || '';
+          const remoteShared = !!(existing.shared as boolean | undefined);
 
           if (remoteUpdatedAt > local.updated_at) {
-            // Remote is newer → update local project metadata
+            // Remote is newer → update local project metadata + shared flag
             await db.execute(
-              'UPDATE projects SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ?',
-              [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteProject.updated_at, this.projectId]
+              'UPDATE projects SET name = ?, description = ?, color = ?, shared = ?, updated_at = ? WHERE id = ?',
+              [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteShared ? 1 : 0, remoteProject.updated_at, this.projectId]
             );
             this.log('[OK] project: pulled metadata update');
-          } else if (local.updated_at > remoteUpdatedAt || (existing.project_key as string | undefined) !== projectKey) {
-            // Local is newer OR project_key changed → push
+          } else if (local.updated_at > remoteUpdatedAt || (existing.project_key as string | undefined) !== projectKey || remoteShared !== isShared) {
+            // Local is newer OR project_key/shared changed → push
             const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
             await this.pb!.collection(PB_PROJECTS).update(existing.id, {
               data: encryptedData,
               project_key: projectKey,
+              shared: isShared,
               created_at: local.created_at,
               updated_at: local.updated_at,
             });
@@ -900,6 +912,7 @@ class SyncService {
           await this.pb!.collection(PB_PROJECTS).update(existing.id, {
             data: encryptedData,
             project_key: projectKey,
+            shared: isShared,
             created_at: local.created_at,
             updated_at: local.updated_at,
           });
@@ -911,6 +924,7 @@ class SyncService {
           local_id: this.projectId,
           data: encryptedData,
           project_key: projectKey,
+          shared: isShared,
           created_at: local.created_at,
           updated_at: local.updated_at,
         });
@@ -939,9 +953,9 @@ class SyncService {
       .join('');
   }
 
-  // Fetch all remote projects (for Join flow) without modifying local state.
-  // Without passphrase: returns projects with no project_key (discoverable).
-  // With passphrase: also returns the project whose project_key matches hash(passphrase).
+  // Fetch remote projects for the Join flow.
+  // Without passphrase: returns all shared=true projects.
+  // With passphrase: finds the project whose project_key matches hash(passphrase).
   async fetchRemoteProjects(url: string, spaceKey: string, passphrase?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
     const pb = new PocketBase(url);
     const syncKey = await deriveSyncKey(spaceKey, url);
@@ -949,19 +963,22 @@ class SyncService {
     await pb.collection('users').authWithPassword(SYNC_USER_EMAIL, spaceKey);
 
     try {
-      const remoteRecords = await pb.collection(PB_PROJECTS).getFullList();
+      let remoteRecords;
+      if (passphrase) {
+        const passphraseHash = await SyncService.hashProjectKeyStatic(passphrase, spaceKey);
+        remoteRecords = await pb.collection(PB_PROJECTS).getFullList({
+          filter: `project_key="${passphraseHash}"`,
+        });
+      } else {
+        remoteRecords = await pb.collection(PB_PROJECTS).getFullList({
+          filter: 'shared=true',
+        });
+      }
+
       const projects: { id: string; name: string; description: string; color: string; isPrivate: boolean }[] = [];
-
-      const passphraseHash = passphrase
-        ? await SyncService.hashProjectKeyStatic(passphrase, spaceKey)
-        : null;
-
       let decryptFailed = 0;
-      for (const remote of remoteRecords) {
-        const remoteKey = (remote.project_key as string) || '';
-        // Show: public projects (no project_key) OR passphrase match
-        if (remoteKey !== '' && remoteKey !== passphraseHash) continue;
 
+      for (const remote of remoteRecords) {
         try {
           const decryptedData = await decrypt(remote.data, syncKey);
           const record = JSON.parse(decryptedData);
@@ -970,14 +987,13 @@ class SyncService {
             name: record.name || 'Unnamed',
             description: record.description || '',
             color: record.color || '#0077B6',
-            isPrivate: remoteKey !== '',
+            isPrivate: !remote.shared,
           });
         } catch {
           decryptFailed++;
         }
       }
 
-      // Records exist but none could be decrypted = wrong space key
       if (projects.length === 0 && decryptFailed > 0) {
         throw new Error(`${decryptFailed} project(s) found but could not be decrypted. Check your Space Key.`);
       }
