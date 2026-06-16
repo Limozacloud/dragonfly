@@ -87,8 +87,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       db: async () => {
         const db = await getDb();
         await db.execute(
-          'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, admin_email, admin_password, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [id, project.name, project.description, project.color, '', '', '', '', 1, now, now]
+          'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [id, project.name, project.description, project.color, '', '', 0, now, now]
         );
       },
       onError: (err) => log('ERR', 'projectStore.addProject: ' + String(err)),
@@ -200,8 +200,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       };
 
       await db.execute(
-        'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, admin_email, admin_password, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [p.id, p.name, p.description, p.color, syncUrl, syncSpaceKey, '', '', 1, now, now]
+        'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [p.id, p.name, p.description, p.color, syncUrl, syncSpaceKey, 0, now, now]
       );
 
       newProjects.push(project);

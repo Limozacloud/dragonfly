@@ -404,7 +404,7 @@
     "join": "Unisciti al progetto",
     "joinDescription": "Connettiti a un server esistente e unisciti a progetti condivisi",
     "fetchProjects": "Recupera progetti",
-    "noProjectsFound": "Nessun progetto trovato su questo server",
+    "noProjectsFound": "Nessun progetto condiviso trovato su questo server DragonFly",
     "alreadyJoined": "Gia unito",
     "joining": "Unione...",
     "joinSuccess": "Unito con successo a {{count}} progetto/i",

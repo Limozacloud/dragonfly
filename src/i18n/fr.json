@@ -404,7 +404,7 @@
     "join": "Rejoindre un projet",
     "joinDescription": "Se connecter a un serveur existant et rejoindre des projets partages",
     "fetchProjects": "Recuperer les projets",
-    "noProjectsFound": "Aucun projet trouve sur ce serveur",
+    "noProjectsFound": "Aucun projet partage trouve sur ce serveur DragonFly",
     "alreadyJoined": "Deja rejoint",
     "joining": "Connexion...",
     "joinSuccess": "{{count}} projet(s) rejoint(s) avec succes",

@@ -404,7 +404,7 @@
     "join": "Join Project",
     "joinDescription": "Connect to an existing server and join shared projects",
     "fetchProjects": "Fetch Projects",
-    "noProjectsFound": "No projects found on this server",
+    "noProjectsFound": "No shared projects found on this DragonFly server",
     "alreadyJoined": "Already joined",
     "joining": "Joining...",
     "joinSuccess": "Successfully joined {{count}} project(s)",

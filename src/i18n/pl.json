@@ -404,7 +404,7 @@
     "join": "Dolacz do projektu",
     "joinDescription": "Polacz sie z istniejacym serwerem i dolacz do udostepnionych projektow",
     "fetchProjects": "Pobierz projekty",
-    "noProjectsFound": "Nie znaleziono projektow na tym serwerze",
+    "noProjectsFound": "Nie znaleziono udostepnionych projektow na tym serwerze DragonFly",
     "alreadyJoined": "Juz dolaczono",
     "joining": "Dolaczanie...",
     "joinSuccess": "Pomyslnie dolaczono do {{count}} projektu/ow",

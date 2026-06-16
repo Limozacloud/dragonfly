@@ -404,7 +404,7 @@
     "join": "Projekt beitreten",
     "joinDescription": "Mit einem bestehenden Server verbinden und geteilte Projekte beitreten",
     "fetchProjects": "Projekte abrufen",
-    "noProjectsFound": "Keine Projekte auf diesem Server gefunden",
+    "noProjectsFound": "Keine geteilten Projekte auf diesem DragonFly-Server gefunden",
     "alreadyJoined": "Bereits beigetreten",
     "joining": "Trete bei...",
     "joinSuccess": "Erfolgreich {{count}} Projekt(e) beigetreten",

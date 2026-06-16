@@ -404,7 +404,7 @@
     "join": "Alatura-te proiectului",
     "joinDescription": "Conecteaza-te la un server existent si alatura-te proiectelor partajate",
     "fetchProjects": "Preia proiecte",
-    "noProjectsFound": "Nu s-au gasit proiecte pe acest server",
+    "noProjectsFound": "Nu s-au gasit proiecte partajate pe acest server DragonFly",
     "alreadyJoined": "Deja alaturat",
     "joining": "Se alatura...",
     "joinSuccess": "S-a alaturat cu succes la {{count}} proiect(e)",
