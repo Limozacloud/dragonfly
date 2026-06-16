@@ -7,8 +7,6 @@ export interface ProjectRow {
   color: string;
   sync_url: string;
   sync_space_key: string;
-  admin_email: string;
-  admin_password: string;
   shared: number; // 0 | 1
   created_at: string;
   updated_at: string;

@@ -238,6 +238,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
             await useProjectStore.getState().updateProject(projectId, {
               syncUrl: setupUrl.trim(),
               syncSpaceKey: setupSpaceKey.trim(),
+              shared: false,
             });
             // Save after syncUrl is written so setProjectAdminCredentials can key by URL
             await setProjectAdminCredentials(projectId, adminEmail.trim(), adminPassword.trim());

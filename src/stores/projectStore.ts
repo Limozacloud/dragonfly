@@ -14,9 +14,7 @@ function rowToProject(row: ProjectRow): Project {
     color: row.color || '#0077B6',
     syncUrl: row.sync_url || '',
     syncSpaceKey: row.sync_space_key || '',
-    adminEmail: row.admin_email || '',
-    adminPassword: row.admin_password || '',
-    shared: row.shared !== undefined ? !!row.shared : true,
+    shared: !!row.shared,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -30,7 +28,7 @@ interface ProjectStore {
   loadProjects: () => Promise<void>;
   setCurrentProject: (id: string) => void;
   addProject: (data: { name: string; description: string; color: string }) => Promise<Project>;
-  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description' | 'color' | 'syncUrl' | 'syncSpaceKey' | 'adminEmail' | 'adminPassword' | 'shared'>>) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description' | 'color' | 'syncUrl' | 'syncSpaceKey' | 'shared'>>) => Promise<void>;
   deleteProject: (id: string) => Promise<boolean>;
   getCurrentProject: () => Project | null;
   getProjectStats: (projectId: string) => Promise<{ tasks: number; notes: number }>;
@@ -77,9 +75,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       color: data.color,
       syncUrl: '',
       syncSpaceKey: '',
-      adminEmail: '',
-      adminPassword: '',
-      shared: true,
+      shared: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -116,8 +112,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       db: async () => {
         const db = await getDb();
         await db.execute(
-          'UPDATE projects SET name = ?, description = ?, color = ?, sync_url = ?, sync_space_key = ?, admin_email = ?, admin_password = ?, shared = ?, updated_at = ? WHERE id = ?',
-          [updated.name, updated.description, updated.color, updated.syncUrl, updated.syncSpaceKey, updated.adminEmail, updated.adminPassword, updated.shared ? 1 : 0, now, id]
+          'UPDATE projects SET name = ?, description = ?, color = ?, sync_url = ?, sync_space_key = ?, shared = ?, updated_at = ? WHERE id = ?',
+          [updated.name, updated.description, updated.color, updated.syncUrl, updated.syncSpaceKey, updated.shared ? 1 : 0, now, id]
         );
       },
       onError: (err) => log('ERR', 'projectStore.updateProject: ' + String(err)),
@@ -198,9 +194,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         color: p.color,
         syncUrl,
         syncSpaceKey,
-        adminEmail: '',
-        adminPassword: '',
-        shared: true,
+        shared: false,
         createdAt: now,
         updatedAt: now,
       };

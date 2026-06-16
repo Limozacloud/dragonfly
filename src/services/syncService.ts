@@ -507,11 +507,10 @@ class SyncService {
     }
   }
 
-  // Re-authenticate if token is invalid
+  // Always re-authenticate against the server (never trust localStorage-cached token)
   private async ensureAuth(): Promise<void> {
     if (!this.pb || !this.spaceKey) return;
-    if (this.pb.authStore.isValid) return;
-
+    this.pb.authStore.clear();
     this.log('[...] Authenticating...');
     await this.pb.collection('users').authWithPassword(SYNC_USER_EMAIL, this.spaceKey);
     this.connected = true;

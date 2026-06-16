@@ -39,7 +39,7 @@ const TABLE_SCHEMAS: Record<string, Record<string, string>> = {
     color: "TEXT DEFAULT '#0077B6'",
     sync_url: "TEXT DEFAULT ''",
     sync_space_key: "TEXT DEFAULT ''",
-    shared: 'INTEGER DEFAULT 1',
+    shared: 'INTEGER DEFAULT 0',
     created_at: 'TEXT NOT NULL',
     updated_at: 'TEXT NOT NULL',
     deleted: 'INTEGER DEFAULT 0',
