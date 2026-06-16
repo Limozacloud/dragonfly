@@ -47,6 +47,8 @@ function ReleasesPage({ createRequested, onCreateHandled, onCreateCancelled }: {
       handleOpenModal();
       onCreateHandled?.();
     }
+    // onCreateHandled intentionally excluded — stable prop callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createRequested]);
 
   // Close CAB dropdown on outside click

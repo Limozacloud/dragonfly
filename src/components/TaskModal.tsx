@@ -138,6 +138,8 @@ function TaskModal({ isOpen, onClose, task, onChildClick, initialValues }: TaskM
       setPreviousContent(null);
       setEditorKey((k) => k + 1);
     }
+    // initialValues fields intentionally excluded — only re-initialize on open/task change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, task]);
 
   const handleSave = async () => {

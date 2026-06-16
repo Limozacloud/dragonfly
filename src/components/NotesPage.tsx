@@ -352,7 +352,7 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
     if (prev?.includes('dragonfly-attachment://') && content && !content.includes('dragonfly-attachment://')) {
       setEditorKey((k) => k + 1);
     }
-  }, [selectedNote?.content]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedNote?.content]);
 
   const switchToEdit = () => {
     setIsEditing(true);
@@ -436,6 +436,8 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
       handleCreateNote(null);
       onCreateHandled?.();
     }
+    // handleCreateNote and onCreateHandled are intentionally excluded — stable across renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createRequested]);
 
   const handleDeleteRequest = () => {

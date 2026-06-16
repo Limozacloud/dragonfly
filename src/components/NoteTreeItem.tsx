@@ -24,6 +24,8 @@ function NoteTreeItem({ note, level, activeNoteId, onSelect, onCreateChild, filt
 
   useEffect(() => {
     setIsExpanded(expandSignal.expanded);
+    // expandSignal.key is the trigger — intentionally not including expandSignal.expanded
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandSignal.key]);
 
   const children = getChildren(note.id).slice().sort(sortFn);
