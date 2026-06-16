@@ -6,7 +6,8 @@ import {
   IconLoader2, IconEye, IconEyeOff, IconPlugConnected,
 } from '@tabler/icons-react';
 import { syncService } from '../../services/syncService';
-import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION } from '../../services/database';
+import { getProjectAdminCredentials, setProjectAdminCredentials, clearProjectAdminCredentials, SCHEMA_VERSION, getConfig, setConfig } from '../../services/database';
+import { SYNC_SCHEMA_VERSION } from '../../services/syncService';
 import { generateSpaceUrl, parseSpaceUrl } from '../../services/spaceUrl';
 import { useProjectStore } from '@/stores/projectStore';
 import { Button } from '../ui/button';
@@ -30,16 +31,9 @@ function spaceKeyStrength(key: string): 'weak' | 'fair' | 'strong' {
 
 function SpaceKeyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const { t } = useTranslation();
-  if (value.trim().length === 0) return (
-    <Input
-      type="password"
-      placeholder={t('sync.spaceKeyPlaceholder')}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  );
-  const strength = spaceKeyStrength(value.trim());
-  const bars = { weak: 1, fair: 2, strong: 3 }[strength];
+  const hasValue = value.trim().length > 0;
+  const strength = hasValue ? spaceKeyStrength(value.trim()) : null;
+  const bars = strength ? { weak: 1, fair: 2, strong: 3 }[strength] : 0;
   const colors = { weak: 'bg-red-500', fair: 'bg-amber-400', strong: 'bg-green-500' };
   const labels = {
     weak: t('sync.spaceKeyStrengthWeak'),
@@ -54,14 +48,18 @@ function SpaceKeyInput({ value, onChange }: { value: string; onChange: (v: strin
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
-      <div className="flex gap-1">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className={`h-1 flex-1 rounded-full ${i <= bars ? colors[strength] : 'bg-muted'}`} />
-        ))}
-      </div>
-      <p className={`text-xs ${strength === 'weak' ? 'text-red-500' : strength === 'fair' ? 'text-amber-500' : 'text-green-600'}`}>
-        {labels[strength]}
-      </p>
+      {hasValue && strength && (
+        <>
+          <div className="flex gap-1">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={`h-1 flex-1 rounded-full ${i <= bars ? colors[strength] : 'bg-muted'}`} />
+            ))}
+          </div>
+          <p className={`text-xs ${strength === 'weak' ? 'text-red-500' : strength === 'fair' ? 'text-amber-500' : 'text-green-600'}`}>
+            {labels[strength]}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -81,6 +79,9 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
   const [isSyncConnected, setIsSyncConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSchemaMismatch, setIsSchemaMismatch] = useState(false);
+  const [isUpgradingSchema, setIsUpgradingSchema] = useState(false);
+  const [schemaUpgradeStatus, setSchemaUpgradeStatus] = useState('');
 
   const [hasAdminCredentials, setHasAdminCredentials] = useState(false);
   const [displaySpaceUrl, setDisplaySpaceUrl] = useState('');
@@ -99,14 +100,23 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [setupStatus, setSetupStatus] = useState('');
 
-  const [remoteProjects, setRemoteProjects] = useState<Array<{ id: string; name: string; description: string; color: string }>>([]);
+  const [remoteProjects, setRemoteProjects] = useState<Array<{ id: string; name: string; description: string; color: string; isPrivate: boolean }>>([]);
   const [remoteProjectsLoading, setRemoteProjectsLoading] = useState(false);
   const [remoteSelectedIds, setRemoteSelectedIds] = useState<Set<string>>(new Set());
   const [remoteJoining, setRemoteJoining] = useState(false);
   const [remoteError, setRemoteError] = useState('');
 
   const [showConnectConfirm, setShowConnectConfirm] = useState(false);
-  const [connectShared, setConnectShared] = useState(true);
+  const [connectShared, setConnectShared] = useState(false);
+  const [connectError, setConnectError] = useState('');
+
+  const [identityUserId, setIdentityUserId] = useState('');
+  const [identityEmail, setIdentityEmail] = useState('');
+  const [identityPassword, setIdentityPassword] = useState('');
+  const [identityMode, setIdentityMode] = useState<'login' | 'register'>('login');
+  const [identityLoading, setIdentityLoading] = useState(false);
+  const [identityError, setIdentityError] = useState('');
+  const [identitySuccess, setIdentitySuccess] = useState('');
 
   useEffect(() => {
     setIsSyncConnected(syncService.isConnected);
@@ -134,10 +144,17 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       }
 
       setIsSyncConnected(syncService.isConnected);
+      setIsSchemaMismatch(syncService.isSchemaMismatch);
       if (syncService.isConnected && syncService.serverUrl) setSpaceUrl(syncService.serverUrl);
+
+      const savedUserId = await getConfig('pb_identity_user_id');
+      if (savedUserId) setIdentityUserId(savedUserId);
     })();
 
-    const interval = setInterval(() => setIsSyncConnected(syncService.isConnected), 2000);
+    const interval = setInterval(() => {
+      setIsSyncConnected(syncService.isConnected);
+      setIsSchemaMismatch(syncService.isSchemaMismatch);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -153,6 +170,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const handleConnectConfirmed = async () => {
     setShowConnectConfirm(false);
     setIsSyncing(true);
+    setConnectError('');
     try {
       const projectId = useProjectStore.getState().currentProjectId;
       await syncService.connect(spaceUrl.trim(), spaceKey.trim(), projectId || undefined);
@@ -167,9 +185,30 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       setHasSavedCredentials(true);
       setDisplaySpaceUrl(generateSpaceUrl(spaceUrl.trim(), spaceKey.trim()));
     } catch (error) {
-      addLog('[ERR] ' + String(error));
+      const msg = error instanceof Error ? error.message : String(error);
+      setConnectError(msg);
+      addLog('[ERR] ' + msg);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleSchemaUpgrade = async () => {
+    if (!spaceUrl || !adminEmail.trim() || !adminPassword.trim()) return;
+    setIsUpgradingSchema(true);
+    setSchemaUpgradeStatus('');
+    try {
+      await syncService.upgradeRemoteSchema(spaceUrl, adminEmail.trim(), adminPassword.trim(), spaceKey);
+      setSchemaUpgradeStatus(t('schema.syncSchemaUpgradeSuccess'));
+      // Reconnect so the mismatch flag is cleared
+      const projId = useProjectStore.getState().currentProjectId;
+      await syncService.connect(spaceUrl, spaceKey, projId || undefined);
+      setIsSchemaMismatch(syncService.isSchemaMismatch);
+      setIsSyncConnected(syncService.isConnected);
+    } catch (err) {
+      setSchemaUpgradeStatus(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsUpgradingSchema(false);
     }
   };
 
@@ -183,8 +222,6 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
       addLog('[OK] ' + t('sync.setupSuccess'));
       setSetupStatus(t('sync.setupSuccess'));
 
-      const projId = useProjectStore.getState().currentProjectId;
-      if (projId) await setProjectAdminCredentials(projId, adminEmail.trim(), adminPassword.trim());
       setHasAdminCredentials(true);
 
       setTimeout(async () => {
@@ -202,6 +239,8 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
               syncUrl: setupUrl.trim(),
               syncSpaceKey: setupSpaceKey.trim(),
             });
+            // Save after syncUrl is written so setProjectAdminCredentials can key by URL
+            await setProjectAdminCredentials(projectId, adminEmail.trim(), adminPassword.trim());
           }
           setHasSavedCredentials(true);
           setDisplaySpaceUrl(generateSpaceUrl(setupUrl.trim(), setupSpaceKey.trim()));
@@ -229,7 +268,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
     setRemoteProjects([]);
     setRemoteSelectedIds(new Set());
     try {
-      const result = await syncService.fetchRemoteProjects(spaceUrl.trim(), spaceKey.trim());
+      const result = await syncService.fetchRemoteProjects(spaceUrl.trim(), spaceKey.trim(), identityUserId || undefined);
       setRemoteProjects(result);
     } catch (err) {
       setRemoteError(String(err));
@@ -327,12 +366,23 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
 
                 <Button
                   className="w-full"
-                  onClick={() => { setConnectShared(true); setShowConnectConfirm(true); }}
+                  onClick={() => { setConnectError(''); setConnectShared(false); setShowConnectConfirm(true); }}
                   disabled={isSyncing || !spaceUrl.trim() || spaceKeyStrength(spaceKey.trim()) === 'weak'}
                 >
                   <IconPlugConnected size={15} className="mr-2" />
                   {isSyncing ? t('sync.connecting') : t('sync.connect')}
                 </Button>
+                {connectError && (
+                  <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-md text-xs text-red-700">
+                    <IconAlertTriangle size={14} className="shrink-0 mt-0.5" />
+                    <span>
+                      {connectError}
+                      {/auth/i.test(connectError) && (
+                        <span className="block mt-1 text-red-500">{t('sync.connectAuthFailedHint')}</span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
@@ -360,11 +410,57 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
           {/* ── CONNECTED ── */}
           {(syncView === 'admin' || syncView === 'user') && (
             <>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{t('sync.schemaVersion')}</span>
-                <span className="font-mono text-xs">v{SCHEMA_VERSION}</span>
+              {/* Status banner */}
+              <div className={`flex items-center gap-3 p-3 rounded-md border ${isSyncConnected ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                {isSyncConnected
+                  ? <IconCloud size={20} className="text-green-600 shrink-0" />
+                  : <IconCloudOff size={20} className="text-amber-500 shrink-0" />
+                }
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${isSyncConnected ? 'text-green-800' : 'text-amber-800'}`}>
+                    {isSyncConnected ? t('sync.statusConnected') : t('sync.statusOffline')}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{spaceUrl}</p>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${isSyncConnected ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {isSyncConnected ? t('sync.live') : t('sync.offline')}
+                </span>
               </div>
 
+              {/* Schema mismatch banner */}
+              {isSchemaMismatch && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3 space-y-2">
+                  <p className="text-sm font-medium text-red-800 flex items-center gap-1.5">
+                    <IconAlertTriangle size={16} />
+                    {t('schema.syncSchemaMismatch')}
+                  </p>
+                  <p className="text-xs text-red-700">
+                    {t('schema.syncSchemaMismatchMessage', {
+                      serverVersion: syncService.serverSyncSchemaVersion,
+                      appVersion: SYNC_SCHEMA_VERSION,
+                    })}
+                  </p>
+                  {isAdmin ? (
+                    <div className="space-y-1.5 pt-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleSchemaUpgrade}
+                        disabled={isUpgradingSchema}
+                      >
+                        {isUpgradingSchema ? t('common.loading') : t('schema.upgradeAsAdmin')}
+                      </Button>
+                      {schemaUpgradeStatus && (
+                        <p className="text-xs text-red-600">{schemaUpgradeStatus}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-600">{t('schema.syncSchemaContactAdmin')}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Space URL share */}
               {displaySpaceUrl && (
                 <div>
                   <Label className="mb-1.5 block text-xs">{t('sync.spaceUrlLabel')}</Label>
@@ -389,25 +485,121 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                 </div>
               )}
 
+              {/* Discoverable toggle */}
               {(() => {
                 const project = useProjectStore.getState().getCurrentProject();
                 const isShared = project?.shared ?? true;
                 return (
-                  <div className="flex items-center justify-between py-2 border-t border-border pt-3">
-                    <div>
-                      <Label className="block">{t('sync.shareProject')}</Label>
-                      <small className="text-muted-foreground">{t('sync.shareProjectHint')}</small>
-                    </div>
+                  <div className="flex items-start gap-3 border border-border rounded-md p-3">
                     <Switch
                       checked={isShared}
                       onCheckedChange={async (v: boolean) => {
                         const pid = useProjectStore.getState().currentProjectId;
                         if (pid) await useProjectStore.getState().updateProject(pid, { shared: v });
+                        if (syncService.isConnected) syncService.fullSync().catch(() => {});
                       }}
+                      className="mt-0.5 shrink-0"
                     />
+                    <div>
+                      <p className="text-sm font-medium">{t('sync.shareProject')}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t('sync.shareProjectHintFull')}</p>
+                    </div>
                   </div>
                 );
               })()}
+
+              {/* Personal Identity */}
+              <div className="border border-border rounded-md p-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">{t('sync.personalIdentity')}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('sync.personalIdentityHint')}</p>
+                </div>
+                {identityUserId ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-green-600">
+                      <IconCheck size={14} />
+                      <span>{identityEmail || t('sync.personalIdentitySet')}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs text-destructive hover:text-destructive"
+                      onClick={async () => {
+                        await setConfig('pb_identity_user_id', '');
+                        setIdentityUserId('');
+                        setIdentityEmail('');
+                        setIdentityPassword('');
+                        if (syncService.isConnected) syncService.fullSync().catch(() => {});
+                      }}
+                    >
+                      {t('sync.personalIdentityRemove')}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-1 border border-border rounded-md overflow-hidden text-xs">
+                      <button
+                        className={`flex-1 py-1.5 ${identityMode === 'login' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                        onClick={() => { setIdentityMode('login'); setIdentityError(''); }}
+                      >{t('sync.personalIdentityLogin')}</button>
+                      <button
+                        className={`flex-1 py-1.5 ${identityMode === 'register' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                        onClick={() => { setIdentityMode('register'); setIdentityError(''); }}
+                      >{t('sync.personalIdentityRegister')}</button>
+                    </div>
+                    <Input
+                      type="email"
+                      placeholder="email@example.com"
+                      value={identityEmail}
+                      onChange={(e) => { setIdentityEmail(e.target.value); setIdentityError(''); }}
+                      className="text-sm"
+                    />
+                    <Input
+                      type="password"
+                      placeholder={t('sync.personalIdentityPasswordPlaceholder')}
+                      value={identityPassword}
+                      onChange={(e) => { setIdentityPassword(e.target.value); setIdentityError(''); }}
+                      className="text-sm"
+                    />
+                    {identityError && <p className="text-xs text-red-500">{identityError}</p>}
+                    {identitySuccess && <p className="text-xs text-green-600">{identitySuccess}</p>}
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      disabled={!identityEmail.trim() || !identityPassword.trim() || identityLoading}
+                      onClick={async () => {
+                        setIdentityLoading(true);
+                        setIdentityError('');
+                        setIdentitySuccess('');
+                        try {
+                          const userId = identityMode === 'register'
+                            ? await syncService.registerIdentity(identityEmail.trim(), identityPassword.trim())
+                            : await syncService.loginIdentity(identityEmail.trim(), identityPassword.trim());
+                          await setConfig('pb_identity_user_id', userId);
+                          setIdentityUserId(userId);
+                          setIdentityPassword('');
+                          if (syncService.isConnected) syncService.fullSync().catch(() => {});
+                        } catch (err) {
+                          setIdentityError(err instanceof Error ? err.message : String(err));
+                        } finally {
+                          setIdentityLoading(false);
+                        }
+                      }}
+                    >
+                      {identityLoading
+                        ? t('common.loading')
+                        : identityMode === 'register'
+                          ? t('sync.personalIdentityRegister')
+                          : t('sync.personalIdentityLogin')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2">
+                <span>{t('sync.schemaVersion')}</span>
+                <span className="font-mono">v{SCHEMA_VERSION}</span>
+              </div>
             </>
           )}
         </CardContent>
@@ -482,7 +674,13 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                         )}
                         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: rp.color }} />
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium block truncate">{rp.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium truncate">{rp.name}</span>
+                            {rp.isPrivate
+                              ? <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 shrink-0">{t('sync.privateProject')}</span>
+                              : <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 shrink-0">{t('sync.publicProject')}</span>
+                            }
+                          </div>
                           {rp.description && (
                             <span className="text-xs text-muted-foreground block truncate">{rp.description}</span>
                           )}

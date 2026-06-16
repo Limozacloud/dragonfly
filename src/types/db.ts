@@ -128,7 +128,8 @@ export type AppConfigKey =
   | 'reminder_sync_project_id'
   | 'reminder_sync_secret'
   | 'reminder_sync_smtp'
-  | 'reminder_settings_updated_at';
+  | 'reminder_settings_updated_at'
+  | 'pb_identity_user_id';
 
 export interface AppConfigRow {
   key: AppConfigKey;

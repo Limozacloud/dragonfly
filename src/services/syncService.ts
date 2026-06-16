@@ -26,6 +26,10 @@ const PB_PERSONAL_TODOS = 'df_personal_todos';
 const PB_PERSONAL_SETTINGS = 'df_personal_settings';
 const SYNC_USER_EMAIL = 'sync@dragonfly.local';
 
+// Bumped whenever the PocketBase collection schema changes.
+// Admins must run "Upgrade Schema" when this version is higher than the server's sync_schema_version.
+export const SYNC_SCHEMA_VERSION = 2;
+
 // PocketBase collection field descriptor (shared between schema approaches)
 type PbField = Record<string, unknown> & { name: string };
 
@@ -51,6 +55,7 @@ class SyncService {
   private unsubscribes: (() => void)[] = [];
   private failedPushQueue = new Map<string, { table: LocalTable; id: string; retries: number }>();
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private _serverSyncSchemaVersion: number = 0;
 
   get isConnected() {
     return this.connected;
@@ -58,6 +63,14 @@ class SyncService {
 
   get serverUrl() {
     return this.url;
+  }
+
+  get serverSyncSchemaVersion() {
+    return this._serverSyncSchemaVersion;
+  }
+
+  get isSchemaMismatch() {
+    return this._serverSyncSchemaVersion > 0 && this._serverSyncSchemaVersion < SYNC_SCHEMA_VERSION;
   }
 
   get pocketBase(): PocketBase | null {
@@ -250,6 +263,13 @@ class SyncService {
     ];
   }
 
+  private getProjectFields() {
+    return [
+      ...this.getDataFields(),
+      { name: 'owner_id', type: 'text', required: false },
+    ];
+  }
+
   private getAttachmentFields() {
     return [
       { name: 'local_id', type: 'text', required: true },
@@ -336,8 +356,8 @@ class SyncService {
       await this.ensureCollection(pb, name, this.getDataFields(), authRules);
     }
 
-    // Projects collection
-    await this.ensureCollection(pb, PB_PROJECTS, this.getDataFields(), authRules);
+    // Projects collection (includes owner_id for personal identity)
+    await this.ensureCollection(pb, PB_PROJECTS, this.getProjectFields(), authRules);
 
     // Attachments collection
     await this.ensureCollection(pb, PB_ATTACHMENTS, this.getAttachmentFields(), authRules);
@@ -352,12 +372,14 @@ class SyncService {
     const metaAuthRules = this.getMetaAuthRules(syncUserId);
     await this.ensureCollection(pb, PB_META, this.getMetaFields(), metaAuthRules);
 
-    // Write initial schema_version record
-    try {
-      const existing = await pb.collection(PB_META).getFirstListItem('key="schema_version"');
-      await pb.collection(PB_META).update(existing.id, { value: String(SCHEMA_VERSION) });
-    } catch {
-      await pb.collection(PB_META).create({ key: 'schema_version', value: String(SCHEMA_VERSION) });
+    // Write schema version records
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)], ['sync_schema_version', String(SYNC_SCHEMA_VERSION)]]) {
+      try {
+        const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
+        await pb.collection(PB_META).update(existing.id, { value });
+      } catch {
+        await pb.collection(PB_META).create({ key, value });
+      }
     }
 
     pb.authStore.clear();
@@ -386,7 +408,7 @@ class SyncService {
     for (const [, name] of Object.entries(PB_COLLECTIONS)) {
       allCollections[name] = this.getDataFields();
     }
-    allCollections[PB_PROJECTS] = this.getDataFields();
+    allCollections[PB_PROJECTS] = this.getProjectFields();
     allCollections[PB_ATTACHMENTS] = this.getAttachmentFields();
     allCollections[PB_TOMBSTONES] = this.getTombstoneFields();
     allCollections[PB_META] = this.getMetaFields();
@@ -437,6 +459,15 @@ class SyncService {
       }
     }
 
+    // Update sync_schema_version after successful migration
+    try {
+      const existing = await pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
+      await pb.collection(PB_META).update(existing.id, { value: String(SYNC_SCHEMA_VERSION) });
+    } catch {
+      await pb.collection(PB_META).create({ key: 'sync_schema_version', value: String(SYNC_SCHEMA_VERSION) });
+    }
+    report.push(`[OK] sync_schema_version updated to v${SYNC_SCHEMA_VERSION}`);
+
     pb.authStore.clear();
     return report;
   }
@@ -452,9 +483,28 @@ class SyncService {
     await this.ensureAuth();
     this.connected = true;
 
+    // Check server sync schema version before syncing
+    await this.checkServerSyncSchemaVersion();
+    if (this.isSchemaMismatch) {
+      this.log(`[WARN] Server sync schema v${this._serverSyncSchemaVersion} < app v${SYNC_SCHEMA_VERSION} — sync blocked`);
+      window.dispatchEvent(new Event('dragonfly-sync'));
+      return;
+    }
+
     await this.fullSync();
     await this.subscribe();
     this.log('[OK] Connected & subscribed');
+  }
+
+  private async checkServerSyncSchemaVersion(): Promise<void> {
+    if (!this.pb) return;
+    try {
+      const rec = await this.pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
+      this._serverSyncSchemaVersion = parseInt(rec.value as string, 10) || 1;
+    } catch {
+      // Key doesn't exist yet → old server = v1
+      this._serverSyncSchemaVersion = 1;
+    }
   }
 
   // Re-authenticate if token is invalid
@@ -487,6 +537,10 @@ class SyncService {
 
   async fullSync(): Promise<void> {
     if (!this.pb || !this.syncKey) return;
+    if (this.isSchemaMismatch) {
+      this.log(`[WARN] Sync blocked — server schema v${this._serverSyncSchemaVersion} < required v${SYNC_SCHEMA_VERSION}`);
+      return;
+    }
 
     // Re-auth if token expired
     await this.ensureAuth();
@@ -848,22 +902,27 @@ class SyncService {
       if (localRows.length === 0) return;
       const local = localRows[0];
       const isShared = local.shared !== undefined ? !!local.shared : true;
+      const identityHash = await getConfig('pb_identity_user_id');
 
       // Check if project already exists on remote
       const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
 
-      // If not shared, remove from remote if it exists and skip push
-      if (!isShared) {
+      // If not shared AND no personal identity → old behavior: remove from PB entirely
+      if (!isShared && !identityHash) {
         if (existing) {
           try {
             await this.pb!.collection(PB_PROJECTS).delete(existing.id);
-            this.log('[OK] project: removed from remote (not shared)');
+            this.log('[OK] project: removed from remote (not shared, no identity)');
           } catch (err: unknown) {
             logToService('WARN', 'sync: delete project from PB failed: ' + String(err));
           }
         }
         return;
       }
+
+      // If not shared but HAS identity → keep on PB with owner_id (private, only owner can find)
+      // If shared → keep on PB (discoverable by all)
+      const ownerIdValue = identityHash || '';
 
       const projectData = {
         id: local.id,
@@ -888,11 +947,12 @@ class SyncService {
               [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteProject.updated_at, this.projectId]
             );
             this.log('[OK] project: pulled metadata update');
-          } else if (local.updated_at > remoteUpdatedAt) {
-            // Local is newer → push
+          } else if (local.updated_at > remoteUpdatedAt || (existing.owner_id as string | undefined) !== ownerIdValue) {
+            // Local is newer OR owner_id changed → push
             const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
             await this.pb!.collection(PB_PROJECTS).update(existing.id, {
               data: encryptedData,
+              owner_id: ownerIdValue,
               created_at: local.created_at,
               updated_at: local.updated_at,
             });
@@ -903,6 +963,7 @@ class SyncService {
           const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
           await this.pb!.collection(PB_PROJECTS).update(existing.id, {
             data: encryptedData,
+            owner_id: ownerIdValue,
             created_at: local.created_at,
             updated_at: local.updated_at,
           });
@@ -913,6 +974,7 @@ class SyncService {
         await this.pb!.collection(PB_PROJECTS).create({
           local_id: this.projectId,
           data: encryptedData,
+          owner_id: ownerIdValue,
           created_at: local.created_at,
           updated_at: local.updated_at,
         });
@@ -923,8 +985,45 @@ class SyncService {
     }
   }
 
+  // Register a new personal account on the PocketBase server
+  async registerIdentity(email: string, password: string): Promise<string> {
+    if (!this.pb) throw new Error('Not connected');
+    const pb = new PocketBase(this.url);
+    try {
+      const user = await pb.collection('users').create({ email, password, passwordConfirm: password });
+      return user.id as string;
+    } catch (err: unknown) {
+      const pbErr = err as { response?: { data?: Record<string, { message?: string }> }; status?: number; message?: string };
+      if (pbErr?.response?.data) {
+        const fieldErrors = Object.entries(pbErr.response.data)
+          .map(([field, e]) => `${field}: ${e?.message ?? ''}`)
+          .join(', ');
+        throw new Error(fieldErrors || pbErr.message || String(err));
+      }
+      throw new Error(pbErr?.message || String(err));
+    } finally {
+      pb.authStore.clear();
+    }
+  }
+
+  // Login with an existing personal account — returns the stable PB user ID
+  async loginIdentity(email: string, password: string): Promise<string> {
+    if (!this.pb) throw new Error('Not connected');
+    const pb = new PocketBase(this.url);
+    try {
+      const auth = await pb.collection('users').authWithPassword(email, password);
+      return auth.record.id as string;
+    } catch (err: unknown) {
+      const pbErr = err as { status?: number; message?: string };
+      if (pbErr?.status === 400) throw new Error('Invalid email or password.');
+      throw new Error(pbErr?.message || String(err));
+    } finally {
+      pb.authStore.clear();
+    }
+  }
+
   // Fetch all remote projects (for Join flow) without modifying local state
-  async fetchRemoteProjects(url: string, spaceKey: string): Promise<{ id: string; name: string; description: string; color: string }[]> {
+  async fetchRemoteProjects(url: string, spaceKey: string, ownerHash?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
     const pb = new PocketBase(url);
     const syncKey = await deriveSyncKey(spaceKey, url);
 
@@ -932,10 +1031,14 @@ class SyncService {
 
     try {
       const remoteRecords = await pb.collection(PB_PROJECTS).getFullList();
-      const projects: { id: string; name: string; description: string; color: string }[] = [];
+      const projects: { id: string; name: string; description: string; color: string; isPrivate: boolean }[] = [];
 
       let decryptFailed = 0;
       for (const remote of remoteRecords) {
+        // Filter: show public (no owner_id) + own (owner_id matches)
+        const remoteOwnerId = (remote.owner_id as string) || '';
+        if (remoteOwnerId !== '' && remoteOwnerId !== ownerHash) continue;
+
         try {
           const decryptedData = await decrypt(remote.data, syncKey);
           const record = JSON.parse(decryptedData);
@@ -944,6 +1047,7 @@ class SyncService {
             name: record.name || 'Unnamed',
             description: record.description || '',
             color: record.color || '#0077B6',
+            isPrivate: remoteOwnerId !== '',
           });
         } catch {
           decryptFailed++;
@@ -1083,6 +1187,23 @@ class SyncService {
     } catch {
       pb.authStore.clear();
       return null;
+    }
+  }
+
+  async fetchRemoteSyncSchemaVersion(url: string, spaceKey: string): Promise<number> {
+    const pb = new PocketBase(url);
+    try {
+      await pb.collection('users').authWithPassword(SYNC_USER_EMAIL, spaceKey);
+      try {
+        const record = await pb.collection(PB_META).getFirstListItem('key="sync_schema_version"');
+        return parseInt(record.value as string, 10) || 1;
+      } catch {
+        return 1; // old server without sync_schema_version = v1
+      }
+    } catch {
+      return 1;
+    } finally {
+      pb.authStore.clear();
     }
   }
 
