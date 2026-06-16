@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
 import { useTaskStore } from './stores/taskStore';
 import Sidebar from './components/Sidebar';
 import KanbanBoard from './components/KanbanBoard';
@@ -71,7 +73,6 @@ function App() {
   const [schemaBlocked, setSchemaBlocked] = useState(false);
   const [schemaVersionInfo, setSchemaVersionInfo] = useState<{ local: number; db: number } | null>(null);
   const [unlocked, setUnlocked] = useState(false);
-  const [_passphrase, setPassphrase] = useState<string | null>(null);
   const [autoLogoutMinutes, setAutoLogoutMinutes] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const manualSwitchRef = useRef(false);
@@ -106,6 +107,39 @@ function App() {
       }
     };
     init();
+  }, []);
+
+  // BlockNote's file download button calls window.open() with asset:// URLs.
+  // Tauri's WebView can't handle these as downloads, so we intercept and use Tauri's save dialog.
+  useEffect(() => {
+    const originalOpen = window.open.bind(window);
+    window.open = function (url?: string | URL) {
+      const href = url?.toString() || '';
+      if (href.includes('asset.localhost') || href.startsWith('asset://')) {
+        (async () => {
+          try {
+            const uuidExt = decodeURIComponent(href.split('/').pop() || '');
+            const { getDb } = await import('./services/database');
+            const db = await getDb();
+            const rows = await db.select<{ file_name: string }[]>(
+              "SELECT file_name FROM attachments WHERE file_path LIKE ?",
+              [`%${uuidExt}%`]
+            );
+            const filename = rows[0]?.file_name || uuidExt;
+            const savePath = await save({ defaultPath: filename });
+            if (!savePath) return;
+            const resp = await fetch(href);
+            const buffer = await resp.arrayBuffer();
+            await writeFile(savePath, new Uint8Array(buffer));
+          } catch (err) {
+            console.error('Download failed:', err);
+          }
+        })();
+        return null;
+      }
+      return originalOpen(url as string | URL | undefined, undefined, undefined);
+    } as typeof window.open;
+    return () => { window.open = originalOpen; };
   }, []);
 
   // Minimize to tray on close
@@ -274,7 +308,7 @@ function App() {
     checkDueReminders();
     const interval = setInterval(checkDueReminders, REMINDER_CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [unlocked, dbReady, getDueReminders]);
+  }, [unlocked, dbReady, getDueReminders, t]);
 
   // Listen for project deletion events
   useEffect(() => {
@@ -299,7 +333,7 @@ function App() {
       window.removeEventListener('dragonfly-project-deleted', handleProjectDeleted);
       window.removeEventListener('dragonfly-project-tombstone', handleProjectTombstone);
     };
-  }, [loadProjects]);
+  }, [loadProjects, currentProjectId, updateProject]);
 
   // Listen for scratchpad navigation from embedded blocks
   useEffect(() => {
@@ -382,8 +416,7 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleUnlock = (pw: string) => {
-    setPassphrase(pw);
+  const handleUnlock = (_pw: string) => {
     setUnlocked(true);
   };
 

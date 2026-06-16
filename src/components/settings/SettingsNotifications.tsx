@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconCheck, IconMail, IconBell, IconAlertTriangle, IconCopy, IconLoader2 } from '@tabler/icons-react';
 import { syncService } from '../../services/syncService';
-import { getConfig, setConfig } from '../../services/database';
+import { getConfig, setConfig, getProjectAdminCredentials } from '../../services/database';
 import { useProjectStore } from '@/stores/projectStore';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -145,8 +145,9 @@ export default function SettingsNotifications() {
     try {
       const project = projects.find((p) => p.id === reminderSyncProjectId);
       if (!project?.syncUrl) throw new Error(t('settings.reminderSyncNoUrl'));
-      if (!project?.adminEmail) throw new Error(t('settings.reminderSyncNoAdminCreds'));
-      await syncService.setupReminderServer(project.syncUrl, project.adminEmail, project.adminPassword);
+      const adminCreds = await getProjectAdminCredentials(reminderSyncProjectId);
+      if (!adminCreds) throw new Error(t('settings.reminderSyncNoAdminCreds'));
+      await syncService.setupReminderServer(project.syncUrl, adminCreds.email, adminCreds.password);
       setReminderSyncSetupStatus('ok');
       setTimeout(() => setReminderSyncSetupStatus('idle'), 3000);
       syncService.syncPersonalTodos().catch(() => {});

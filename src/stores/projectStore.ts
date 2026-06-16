@@ -6,6 +6,12 @@ import { deleteAttachmentsForEntity } from '../services/attachmentService';
 import { log } from '../services/logService';
 import { optimisticUpdate } from './storeUtils';
 
+function generateProjectPassphrase(): string {
+  const uuid = crypto.randomUUID();
+  const parts = uuid.split('-');
+  return `${parts[0]}-${parts[1]}-${parts[2]}`;
+}
+
 function rowToProject(row: ProjectRow): Project {
   return {
     id: row.id,
@@ -14,9 +20,8 @@ function rowToProject(row: ProjectRow): Project {
     color: row.color || '#0077B6',
     syncUrl: row.sync_url || '',
     syncSpaceKey: row.sync_space_key || '',
-    adminEmail: row.admin_email || '',
-    adminPassword: row.admin_password || '',
-    shared: row.shared !== undefined ? !!row.shared : true,
+    shared: !!row.shared,
+    projectPassphrase: row.project_passphrase || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -30,11 +35,11 @@ interface ProjectStore {
   loadProjects: () => Promise<void>;
   setCurrentProject: (id: string) => void;
   addProject: (data: { name: string; description: string; color: string }) => Promise<Project>;
-  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description' | 'color' | 'syncUrl' | 'syncSpaceKey' | 'adminEmail' | 'adminPassword' | 'shared'>>) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description' | 'color' | 'syncUrl' | 'syncSpaceKey' | 'shared' | 'projectPassphrase'>>) => Promise<void>;
   deleteProject: (id: string) => Promise<boolean>;
   getCurrentProject: () => Project | null;
   getProjectStats: (projectId: string) => Promise<{ tasks: number; notes: number }>;
-  joinProjects: (projects: Array<{ id: string; name: string; description: string; color: string }>, syncUrl: string, syncSpaceKey: string) => Promise<void>;
+  joinProjects: (projects: Array<{ id: string; name: string; description: string; color: string }>, syncUrl: string, syncSpaceKey: string, passphrase?: string) => Promise<void>;
 }
 
 const generateId = () => crypto.randomUUID();
@@ -70,6 +75,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   addProject: async (data) => {
     const now = getTimestamp();
     const id = generateId();
+    const passphrase = generateProjectPassphrase();
     const project: Project = {
       id,
       name: data.name,
@@ -77,9 +83,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       color: data.color,
       syncUrl: '',
       syncSpaceKey: '',
-      adminEmail: '',
-      adminPassword: '',
-      shared: true,
+      shared: false,
+      projectPassphrase: passphrase,
       createdAt: now,
       updatedAt: now,
     };
@@ -91,8 +96,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       db: async () => {
         const db = await getDb();
         await db.execute(
-          'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, admin_email, admin_password, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [id, project.name, project.description, project.color, '', '', '', '', 1, now, now]
+          'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, shared, project_passphrase, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [id, project.name, project.description, project.color, '', '', 0, passphrase, now, now]
         );
       },
       onError: (err) => log('ERR', 'projectStore.addProject: ' + String(err)),
@@ -116,8 +121,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       db: async () => {
         const db = await getDb();
         await db.execute(
-          'UPDATE projects SET name = ?, description = ?, color = ?, sync_url = ?, sync_space_key = ?, admin_email = ?, admin_password = ?, shared = ?, updated_at = ? WHERE id = ?',
-          [updated.name, updated.description, updated.color, updated.syncUrl, updated.syncSpaceKey, updated.adminEmail, updated.adminPassword, updated.shared ? 1 : 0, now, id]
+          'UPDATE projects SET name = ?, description = ?, color = ?, sync_url = ?, sync_space_key = ?, shared = ?, project_passphrase = ?, updated_at = ? WHERE id = ?',
+          [updated.name, updated.description, updated.color, updated.syncUrl, updated.syncSpaceKey, updated.shared ? 1 : 0, updated.projectPassphrase, now, id]
         );
       },
       onError: (err) => log('ERR', 'projectStore.updateProject: ' + String(err)),
@@ -181,7 +186,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
   },
 
-  joinProjects: async (projects, syncUrl, syncSpaceKey) => {
+  joinProjects: async (projects, syncUrl, syncSpaceKey, passphrase) => {
     const now = getTimestamp();
     const db = await getDb();
     const newProjects: Project[] = [];
@@ -198,16 +203,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         color: p.color,
         syncUrl,
         syncSpaceKey,
-        adminEmail: '',
-        adminPassword: '',
-        shared: true,
+        shared: false,
+        projectPassphrase: passphrase || '',
         createdAt: now,
         updatedAt: now,
       };
 
       await db.execute(
-        'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, admin_email, admin_password, shared, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [p.id, p.name, p.description, p.color, syncUrl, syncSpaceKey, '', '', 1, now, now]
+        'INSERT INTO projects (id, name, description, color, sync_url, sync_space_key, shared, project_passphrase, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [p.id, p.name, p.description, p.color, syncUrl, syncSpaceKey, 0, passphrase || '', now, now]
       );
 
       newProjects.push(project);

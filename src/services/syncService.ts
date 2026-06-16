@@ -7,6 +7,7 @@ import { SCHEMA_VERSION } from './database';
 import { deriveSyncKey, encrypt, decrypt, deriveReminderEncKey, hashSecret } from './crypto';
 import { log as logToService, type LogLevel } from './logService';
 import { PB_PRESENCE, getPresenceFields } from './presenceService';
+import { useProjectStore } from '../stores/projectStore';
 
 type LocalTable = 'tasks' | 'releases' | 'users' | 'notes' | 'scratchpads';
 
@@ -51,7 +52,6 @@ class SyncService {
   private unsubscribes: (() => void)[] = [];
   private failedPushQueue = new Map<string, { table: LocalTable; id: string; retries: number }>();
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
-
   get isConnected() {
     return this.connected;
   }
@@ -250,6 +250,14 @@ class SyncService {
     ];
   }
 
+  private getProjectFields() {
+    return [
+      ...this.getDataFields(),
+      { name: 'project_key', type: 'text', required: false },
+      { name: 'shared', type: 'bool', required: false },
+    ];
+  }
+
   private getAttachmentFields() {
     return [
       { name: 'local_id', type: 'text', required: true },
@@ -336,8 +344,8 @@ class SyncService {
       await this.ensureCollection(pb, name, this.getDataFields(), authRules);
     }
 
-    // Projects collection
-    await this.ensureCollection(pb, PB_PROJECTS, this.getDataFields(), authRules);
+    // Projects collection (project_key for private project discovery)
+    await this.ensureCollection(pb, PB_PROJECTS, this.getProjectFields(), authRules);
 
     // Attachments collection
     await this.ensureCollection(pb, PB_ATTACHMENTS, this.getAttachmentFields(), authRules);
@@ -352,12 +360,14 @@ class SyncService {
     const metaAuthRules = this.getMetaAuthRules(syncUserId);
     await this.ensureCollection(pb, PB_META, this.getMetaFields(), metaAuthRules);
 
-    // Write initial schema_version record
-    try {
-      const existing = await pb.collection(PB_META).getFirstListItem('key="schema_version"');
-      await pb.collection(PB_META).update(existing.id, { value: String(SCHEMA_VERSION) });
-    } catch {
-      await pb.collection(PB_META).create({ key: 'schema_version', value: String(SCHEMA_VERSION) });
+    // Write schema version records
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)]]) {
+      try {
+        const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
+        await pb.collection(PB_META).update(existing.id, { value });
+      } catch {
+        await pb.collection(PB_META).create({ key, value });
+      }
     }
 
     pb.authStore.clear();
@@ -386,7 +396,7 @@ class SyncService {
     for (const [, name] of Object.entries(PB_COLLECTIONS)) {
       allCollections[name] = this.getDataFields();
     }
-    allCollections[PB_PROJECTS] = this.getDataFields();
+    allCollections[PB_PROJECTS] = this.getProjectFields();
     allCollections[PB_ATTACHMENTS] = this.getAttachmentFields();
     allCollections[PB_TOMBSTONES] = this.getTombstoneFields();
     allCollections[PB_META] = this.getMetaFields();
@@ -457,11 +467,10 @@ class SyncService {
     this.log('[OK] Connected & subscribed');
   }
 
-  // Re-authenticate if token is invalid
+  // Always re-authenticate against the server (never trust localStorage-cached token)
   private async ensureAuth(): Promise<void> {
     if (!this.pb || !this.spaceKey) return;
-    if (this.pb.authStore.isValid) return;
-
+    this.pb.authStore.clear();
     this.log('[...] Authenticating...');
     await this.pb.collection('users').authWithPassword(SYNC_USER_EMAIL, this.spaceKey);
     this.connected = true;
@@ -847,23 +856,19 @@ class SyncService {
       );
       if (localRows.length === 0) return;
       const local = localRows[0];
-      const isShared = local.shared !== undefined ? !!local.shared : true;
+      let passphrase = (local.project_passphrase as string) || '';
+      if (!passphrase) {
+        const uuid = crypto.randomUUID();
+        const parts = uuid.split('-');
+        passphrase = `${parts[0]}-${parts[1]}-${parts[2]}`;
+        await db.execute('UPDATE projects SET project_passphrase = ? WHERE id = ?', [passphrase, this.projectId]);
+        useProjectStore.getState().loadProjects();
+      }
+      const projectKey = await this.hashProjectKey(passphrase);
+      const isShared = !!local.shared;
 
       // Check if project already exists on remote
       const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
-
-      // If not shared, remove from remote if it exists and skip push
-      if (!isShared) {
-        if (existing) {
-          try {
-            await this.pb!.collection(PB_PROJECTS).delete(existing.id);
-            this.log('[OK] project: removed from remote (not shared)');
-          } catch (err: unknown) {
-            logToService('WARN', 'sync: delete project from PB failed: ' + String(err));
-          }
-        }
-        return;
-      }
 
       const projectData = {
         id: local.id,
@@ -880,19 +885,22 @@ class SyncService {
           const decryptedRemote = await decrypt(existing.data, this.syncKey);
           const remoteProject = JSON.parse(decryptedRemote);
           const remoteUpdatedAt = remoteProject.updated_at || '';
+          const remoteShared = !!(existing.shared as boolean | undefined);
 
           if (remoteUpdatedAt > local.updated_at) {
-            // Remote is newer → update local project metadata
+            // Remote is newer → update local project metadata + shared flag
             await db.execute(
-              'UPDATE projects SET name = ?, description = ?, color = ?, updated_at = ? WHERE id = ?',
-              [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteProject.updated_at, this.projectId]
+              'UPDATE projects SET name = ?, description = ?, color = ?, shared = ?, updated_at = ? WHERE id = ?',
+              [remoteProject.name, remoteProject.description || '', remoteProject.color || '#0077B6', remoteShared ? 1 : 0, remoteProject.updated_at, this.projectId]
             );
             this.log('[OK] project: pulled metadata update');
-          } else if (local.updated_at > remoteUpdatedAt) {
-            // Local is newer → push
+          } else if (local.updated_at > remoteUpdatedAt || (existing.project_key as string | undefined) !== projectKey || remoteShared !== isShared) {
+            // Local is newer OR project_key/shared changed → push
             const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
             await this.pb!.collection(PB_PROJECTS).update(existing.id, {
               data: encryptedData,
+              project_key: projectKey,
+              shared: isShared,
               created_at: local.created_at,
               updated_at: local.updated_at,
             });
@@ -903,6 +911,8 @@ class SyncService {
           const encryptedData = await encrypt(JSON.stringify(projectData), this.syncKey);
           await this.pb!.collection(PB_PROJECTS).update(existing.id, {
             data: encryptedData,
+            project_key: projectKey,
+            shared: isShared,
             created_at: local.created_at,
             updated_at: local.updated_at,
           });
@@ -913,6 +923,8 @@ class SyncService {
         await this.pb!.collection(PB_PROJECTS).create({
           local_id: this.projectId,
           data: encryptedData,
+          project_key: projectKey,
+          shared: isShared,
           created_at: local.created_at,
           updated_at: local.updated_at,
         });
@@ -923,18 +935,49 @@ class SyncService {
     }
   }
 
-  // Fetch all remote projects (for Join flow) without modifying local state
-  async fetchRemoteProjects(url: string, spaceKey: string): Promise<{ id: string; name: string; description: string; color: string }[]> {
+  // Hash a project passphrase + spaceKey to produce a server-specific lookup key
+  private async hashProjectKey(passphrase: string): Promise<string> {
+    const data = new TextEncoder().encode(passphrase + ':' + this.spaceKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  // Static version for use outside a connected instance (e.g. fetchRemoteProjects)
+  private static async hashProjectKeyStatic(passphrase: string, spaceKey: string): Promise<string> {
+    const data = new TextEncoder().encode(passphrase + ':' + spaceKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  // Fetch remote projects for the Join flow.
+  // Without passphrase: returns all shared=true projects.
+  // With passphrase: finds the project whose project_key matches hash(passphrase).
+  async fetchRemoteProjects(url: string, spaceKey: string, passphrase?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
     const pb = new PocketBase(url);
     const syncKey = await deriveSyncKey(spaceKey, url);
 
     await pb.collection('users').authWithPassword(SYNC_USER_EMAIL, spaceKey);
 
     try {
-      const remoteRecords = await pb.collection(PB_PROJECTS).getFullList();
-      const projects: { id: string; name: string; description: string; color: string }[] = [];
+      let remoteRecords;
+      if (passphrase) {
+        const passphraseHash = await SyncService.hashProjectKeyStatic(passphrase, spaceKey);
+        remoteRecords = await pb.collection(PB_PROJECTS).getFullList({
+          filter: `project_key="${passphraseHash}"`,
+        });
+      } else {
+        remoteRecords = await pb.collection(PB_PROJECTS).getFullList({
+          filter: 'shared=true',
+        });
+      }
 
+      const projects: { id: string; name: string; description: string; color: string; isPrivate: boolean }[] = [];
       let decryptFailed = 0;
+
       for (const remote of remoteRecords) {
         try {
           const decryptedData = await decrypt(remote.data, syncKey);
@@ -944,13 +987,13 @@ class SyncService {
             name: record.name || 'Unnamed',
             description: record.description || '',
             color: record.color || '#0077B6',
+            isPrivate: !remote.shared,
           });
         } catch {
           decryptFailed++;
         }
       }
 
-      // Records exist but none could be decrypted = wrong space key
       if (projects.length === 0 && decryptFailed > 0) {
         throw new Error(`${decryptFailed} project(s) found but could not be decrypted. Check your Space Key.`);
       }
@@ -1100,12 +1143,13 @@ class SyncService {
     const pb = new PocketBase(url);
     await this.adminAuth(pb, adminEmail, adminPassword);
 
-    // Update schema_version record (admin auth allows writing to df_meta)
-    try {
-      const existing = await pb.collection(PB_META).getFirstListItem('key="schema_version"');
-      await pb.collection(PB_META).update(existing.id, { value: String(SCHEMA_VERSION) });
-    } catch {
-      await pb.collection(PB_META).create({ key: 'schema_version', value: String(SCHEMA_VERSION) });
+    for (const [key, value] of [['schema_version', String(SCHEMA_VERSION)]]) {
+      try {
+        const existing = await pb.collection(PB_META).getFirstListItem(`key="${key}"`);
+        await pb.collection(PB_META).update(existing.id, { value });
+      } catch {
+        await pb.collection(PB_META).create({ key, value });
+      }
     }
 
     report.push(`[OK] Remote schema_version set to ${SCHEMA_VERSION}`);

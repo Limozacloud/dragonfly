@@ -2,7 +2,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { log } from './logService';
 import type { AppConfigKey } from '../types/db';
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 let db: Database | null = null;
 let dbPromise: Promise<Database> | null = null;
@@ -39,12 +39,16 @@ const TABLE_SCHEMAS: Record<string, Record<string, string>> = {
     color: "TEXT DEFAULT '#0077B6'",
     sync_url: "TEXT DEFAULT ''",
     sync_space_key: "TEXT DEFAULT ''",
-    admin_email: "TEXT DEFAULT ''",
-    admin_password: "TEXT DEFAULT ''",
-    shared: 'INTEGER DEFAULT 1',
+    shared: 'INTEGER DEFAULT 0',
+    project_passphrase: "TEXT DEFAULT ''",
     created_at: 'TEXT NOT NULL',
     updated_at: 'TEXT NOT NULL',
     deleted: 'INTEGER DEFAULT 0',
+  },
+  pb_servers: {
+    url: 'TEXT PRIMARY KEY',
+    admin_email: "TEXT DEFAULT ''",
+    admin_password: "TEXT DEFAULT ''",
   },
   users: {
     id: 'TEXT PRIMARY KEY',
@@ -186,6 +190,22 @@ export async function initDatabase(): Promise<void> {
   // Ensure all expected columns exist (fixes failed migrations, schema drift)
   await ensureColumns();
 
+  // Migrate admin credentials from projects columns → pb_servers table (one-time, idempotent)
+  try {
+    const legacyRows = await database.select<{ sync_url: string; admin_email: string; admin_password: string }[]>(
+      "SELECT sync_url, admin_email, admin_password FROM projects WHERE admin_email != '' AND sync_url != ''"
+    );
+    for (const row of legacyRows) {
+      const url = row.sync_url.replace(/\/+$/, '');
+      await database.execute(
+        'INSERT OR IGNORE INTO pb_servers (url, admin_email, admin_password) VALUES (?, ?, ?)',
+        [url, row.admin_email, row.admin_password]
+      );
+    }
+  } catch {
+    // Column may not exist on fresh DBs — safe to ignore
+  }
+
   // Indexes
   await database.execute('CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)');
   await database.execute('CREATE INDEX IF NOT EXISTS idx_tasks_release ON tasks(release_id)');
@@ -255,11 +275,14 @@ export async function runMigrations(): Promise<'ok' | 'app_too_old'> {
   return 'ok';
 }
 
-// Per-project admin credential helpers
+// Server admin credential helpers — keyed by PocketBase server URL (pb_servers table)
 export async function getProjectAdminCredentials(projectId: string): Promise<{ email: string; password: string } | null> {
   const database = await getDb();
   const rows = await database.select<{ admin_email: string; admin_password: string }[]>(
-    'SELECT admin_email, admin_password FROM projects WHERE id = ?',
+    `SELECT s.admin_email, s.admin_password
+     FROM pb_servers s
+     JOIN projects p ON p.sync_url = s.url OR RTRIM(p.sync_url, '/') = s.url
+     WHERE p.id = ?`,
     [projectId]
   );
   if (rows.length === 0 || !rows[0].admin_email) return null;
@@ -268,40 +291,26 @@ export async function getProjectAdminCredentials(projectId: string): Promise<{ e
 
 export async function setProjectAdminCredentials(projectId: string, email: string, password: string): Promise<void> {
   const database = await getDb();
-  // Get the sync_url of this project to propagate credentials to all projects on the same server
   const urlRows = await database.select<{ sync_url: string }[]>(
     'SELECT sync_url FROM projects WHERE id = ?',
     [projectId]
   );
-  const rawUrl = urlRows[0]?.sync_url ?? '';
-  const normalizedUrl = rawUrl.replace(/\/+$/, '');
-
-  if (normalizedUrl) {
-    // Update all projects whose sync_url matches (with or without trailing slash)
-    const allRows = await database.select<{ id: string; sync_url: string }[]>(
-      'SELECT id, sync_url FROM projects WHERE deleted = 0'
-    );
-    const sameServer = allRows.filter((r) => r.sync_url.replace(/\/+$/, '') === normalizedUrl);
-    for (const row of sameServer) {
-      await database.execute(
-        'UPDATE projects SET admin_email = ?, admin_password = ? WHERE id = ?',
-        [email, password, row.id]
-      );
-    }
-  } else {
-    // Local project (no sync_url) — update only this one
-    await database.execute(
-      'UPDATE projects SET admin_email = ?, admin_password = ? WHERE id = ?',
-      [email, password, projectId]
-    );
-  }
+  const url = urlRows[0]?.sync_url?.replace(/\/+$/, '') ?? '';
+  if (!url) return;
+  await database.execute(
+    'INSERT OR REPLACE INTO pb_servers (url, admin_email, admin_password) VALUES (?, ?, ?)',
+    [url, email, password]
+  );
 }
 
 export async function clearProjectAdminCredentials(projectId: string): Promise<void> {
   const database = await getDb();
-  await database.execute(
-    "UPDATE projects SET admin_email = '', admin_password = '' WHERE id = ?",
+  const urlRows = await database.select<{ sync_url: string }[]>(
+    'SELECT sync_url FROM projects WHERE id = ?',
     [projectId]
   );
+  const url = urlRows[0]?.sync_url?.replace(/\/+$/, '') ?? '';
+  if (!url) return;
+  await database.execute('DELETE FROM pb_servers WHERE url = ?', [url]);
 }
 

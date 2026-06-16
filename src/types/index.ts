@@ -9,9 +9,8 @@ export interface Project {
   color: string;
   syncUrl: string;
   syncSpaceKey: string;
-  adminEmail: string;
-  adminPassword: string;
   shared: boolean;
+  projectPassphrase: string;
   createdAt: string;
   updatedAt: string;
 }
