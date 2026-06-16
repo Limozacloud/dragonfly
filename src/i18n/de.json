@@ -463,6 +463,7 @@
     "personalIdentityRemove": "Abmelden",
     "personalIdentityLogin": "Anmelden",
     "personalIdentityRegister": "Registrieren",
+    "personalIdentityOwnerExists": "Dieses Projekt hat bereits einen Eigentümer. Melde dich mit den Zugangsdaten des Eigentümers an, um private Projekte auf diesem Gerät zu sehen.",
     "personalIdentityPasswordPlaceholder": "Passwort…",
     "spaceUrlLabel": "Space URL",
     "spaceUrlPlaceholder": "dragonfly://pb.example.com/key",

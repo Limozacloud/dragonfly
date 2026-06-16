@@ -1021,6 +1021,18 @@ class SyncService {
     }
   }
 
+  // Returns true if the current connected project already has an owner_id set on the server.
+  // Used to decide whether to offer Register (no owner) or only Login (owner exists).
+  async getRemoteProjectHasOwner(): Promise<boolean> {
+    if (!this.pb || !this.projectId) return false;
+    try {
+      const existing = await this.findRemoteByLocalId(PB_PROJECTS, this.projectId);
+      return !!(existing && (existing.owner_id as string));
+    } catch {
+      return false;
+    }
+  }
+
   // Fetch all remote projects (for Join flow) without modifying local state
   async fetchRemoteProjects(url: string, spaceKey: string, ownerHash?: string): Promise<{ id: string; name: string; description: string; color: string; isPrivate: boolean }[]> {
     const pb = new PocketBase(url);

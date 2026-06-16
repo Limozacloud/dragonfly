@@ -463,6 +463,7 @@
     "personalIdentityRemove": "Cerrar sesion",
     "personalIdentityLogin": "Iniciar sesion",
     "personalIdentityRegister": "Registrarse",
+    "personalIdentityOwnerExists": "Este proyecto ya tiene un propietario. Inicia sesion con las credenciales del propietario para acceder a los proyectos privados en este dispositivo.",
     "personalIdentityPasswordPlaceholder": "Contrasena…",
     "spaceUrlLabel": "Space URL",
     "spaceUrlPlaceholder": "dragonfly://pb.example.com/key",

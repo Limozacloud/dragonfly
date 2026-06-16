@@ -463,6 +463,7 @@
     "personalIdentityRemove": "Deconecteaza-te",
     "personalIdentityLogin": "Conectare",
     "personalIdentityRegister": "Inregistrare",
+    "personalIdentityOwnerExists": "Acest proiect are deja un proprietar. Conectati-va cu datele proprietarului pentru a accesa proiectele private pe acest dispozitiv.",
     "personalIdentityPasswordPlaceholder": "Parola…",
     "spaceUrlLabel": "Space URL",
     "spaceUrlPlaceholder": "dragonfly://pb.example.com/key",

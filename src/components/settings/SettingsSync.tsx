@@ -117,6 +117,7 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
   const [identityLoading, setIdentityLoading] = useState(false);
   const [identityError, setIdentityError] = useState('');
   const [identitySuccess, setIdentitySuccess] = useState('');
+  const [remoteProjectHasOwner, setRemoteProjectHasOwner] = useState(false);
 
   useEffect(() => {
     setIsSyncConnected(syncService.isConnected);
@@ -149,6 +150,11 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
 
       const savedUserId = await getConfig('pb_identity_user_id');
       if (savedUserId) setIdentityUserId(savedUserId);
+
+      if (syncService.isConnected) {
+        const hasOwner = await syncService.getRemoteProjectHasOwner();
+        setRemoteProjectHasOwner(hasOwner);
+      }
     })();
 
     const interval = setInterval(() => {
@@ -538,16 +544,22 @@ export default function SettingsSync({ addLog }: SettingsSyncProps) {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="flex gap-1 border border-border rounded-md overflow-hidden text-xs">
-                      <button
-                        className={`flex-1 py-1.5 ${identityMode === 'login' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                        onClick={() => { setIdentityMode('login'); setIdentityError(''); }}
-                      >{t('sync.personalIdentityLogin')}</button>
-                      <button
-                        className={`flex-1 py-1.5 ${identityMode === 'register' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                        onClick={() => { setIdentityMode('register'); setIdentityError(''); }}
-                      >{t('sync.personalIdentityRegister')}</button>
-                    </div>
+                    {remoteProjectHasOwner ? (
+                      <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                        {t('sync.personalIdentityOwnerExists')}
+                      </p>
+                    ) : (
+                      <div className="flex gap-1 border border-border rounded-md overflow-hidden text-xs">
+                        <button
+                          className={`flex-1 py-1.5 ${identityMode === 'login' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                          onClick={() => { setIdentityMode('login'); setIdentityError(''); }}
+                        >{t('sync.personalIdentityLogin')}</button>
+                        <button
+                          className={`flex-1 py-1.5 ${identityMode === 'register' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                          onClick={() => { setIdentityMode('register'); setIdentityError(''); }}
+                        >{t('sync.personalIdentityRegister')}</button>
+                      </div>
+                    )}
                     <Input
                       type="email"
                       placeholder="email@example.com"

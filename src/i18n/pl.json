@@ -463,6 +463,7 @@
     "personalIdentityRemove": "Wyloguj sie",
     "personalIdentityLogin": "Zaloguj sie",
     "personalIdentityRegister": "Zarejestruj sie",
+    "personalIdentityOwnerExists": "Ten projekt ma juz wlasciciela. Zaloguj sie danymi wlasciciela, aby uzyskac dostep do prywatnych projektow na tym urzadzeniu.",
     "personalIdentityPasswordPlaceholder": "Haslo…",
     "spaceUrlLabel": "Space URL",
     "spaceUrlPlaceholder": "dragonfly://pb.example.com/key",
