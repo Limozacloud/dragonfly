@@ -8,6 +8,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.2.0](https://github.com/Limozacloud/dragonfly/compare/dragonfly-v0.1.17...dragonfly-v0.2.0) (2026-06-16)
+
+
+### Features
+
+* **sync:** private projects, per-project passphrase, fix file downloads ([#35](https://github.com/Limozacloud/dragonfly/issues/35)) ([bf7bac1](https://github.com/Limozacloud/dragonfly/commit/bf7bac1ce3cbccee20aa75bc1bf4352d8a749083))
+* UI enhancements, sync UX refactor, passphrase change, notes improvements ([#33](https://github.com/Limozacloud/dragonfly/issues/33)) ([7accf27](https://github.com/Limozacloud/dragonfly/commit/7accf27318bbf4b1316acff1b4e850ea74fa765a))
+
+
+### Bug Fixes
+
+* adapt to whisper-rs 0.16 get_segment returning Option ([a66db2c](https://github.com/Limozacloud/dragonfly/commit/a66db2c76b06f99be9e3faa9a6856050f51f12b0))
+* add clang to deps and improve LIBCLANG_PATH detection in build.sh ([32e392d](https://github.com/Limozacloud/dragonfly/commit/32e392dd8e0d5d180cd49b3384632bbca85c47b0))
+* add libssl-dev and pkg-config to build.sh dependencies ([d4f05ff](https://github.com/Limozacloud/dragonfly/commit/d4f05ffef99fc15b3e9056cd370bb4200d7840ca))
+* align tauri npm packages with resolved Rust crate versions ([#17](https://github.com/Limozacloud/dragonfly/issues/17)) ([47b56e7](https://github.com/Limozacloud/dragonfly/commit/47b56e710d8a48298bcaf3af2124f1368dc6e644))
+* bump tauri to 2.11.2 to address CVE-2026-42184 ([3b9c90d](https://github.com/Limozacloud/dragonfly/commit/3b9c90d9fb35917dd7421f082c7caf1e6d716dfe))
+* handle Result from WhisperSegment::to_str_lossy for whisper-rs 0.16 ([029a1ca](https://github.com/Limozacloud/dragonfly/commit/029a1ca49f25608ead1d3f71bf45c71deff78851))
+* install curl before nvm/rustup in build.sh ([0c2d80c](https://github.com/Limozacloud/dragonfly/commit/0c2d80c3db215ee103bf2868f23d6d89f04d410f))
+* move LLVM detection before dependency check in dev/build scripts; add install summary to setup scripts ([0ec7632](https://github.com/Limozacloud/dragonfly/commit/0ec7632306ca31d02593ea682009ef5806b0fcad))
+* resolve clippy warnings in CI ([766f53f](https://github.com/Limozacloud/dragonfly/commit/766f53f3b6ad1dabbdbd13367aa8b84206f43860))
+* source nvm/cargo env in dev.sh and build.sh, set execute bits ([587cf0d](https://github.com/Limozacloud/dragonfly/commit/587cf0da7092664183814d969eb1f1b5b6ded755))
+* update whisper-rs API for v0.16 compatibility ([1d72333](https://github.com/Limozacloud/dragonfly/commit/1d72333db3d2f35a3d75e45b78c9bb873174d319))
+* use GITHUB_TOKEN for release-please ([b39dc55](https://github.com/Limozacloud/dragonfly/commit/b39dc55e1a1c1397945972cd42e81207ec98802f))
+* use WhisperSegment::to_str_lossy for whisper-rs 0.16 compatibility ([61e062c](https://github.com/Limozacloud/dragonfly/commit/61e062cb627fe497cfc88cfabfc0cb35114d77c1))
+
 ## [Unreleased]
 
 ---
