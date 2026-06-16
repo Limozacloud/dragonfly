@@ -95,7 +95,7 @@ function NotesPage({ createRequested, onCreateHandled }: { createRequested?: boo
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const prevNoteContentRef = useRef<string | undefined>();
+  const prevNoteContentRef = useRef<string | undefined>(undefined);
   const [tocOpen, setTocOpen] = useState(false);
   const [changeCounter, setChangeCounter] = useState(0);
 

@@ -138,7 +138,7 @@ function App() {
         })();
         return null;
       }
-      return originalOpen(url as string, ...args);
+      return originalOpen(url as string | URL | undefined, undefined, undefined);
     } as typeof window.open;
     return () => { window.open = originalOpen; };
   }, []);
