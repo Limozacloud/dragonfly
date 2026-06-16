@@ -114,7 +114,7 @@ function App() {
   // Tauri's WebView can't handle these as downloads, so we intercept and use Tauri's save dialog.
   useEffect(() => {
     const originalOpen = window.open.bind(window);
-    window.open = function (url?: string | URL, ...args: unknown[]) {
+    window.open = function (url?: string | URL) {
       const href = url?.toString() || '';
       if (href.includes('asset.localhost') || href.startsWith('asset://')) {
         (async () => {
