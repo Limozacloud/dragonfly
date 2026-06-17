@@ -3,17 +3,24 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'dragonfly-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to attach binaries to (e.g. dragonfly-v0.2.0)'
+        required: true
 
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -35,9 +42,9 @@ jobs:
       - name: Collect release files
         shell: bash
         env:
-          VERSION: ${{ github.ref_name }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          VER="${VERSION#v}"
+          VER="${TAG#dragonfly-v}"
           mkdir -p staging
           cp src-tauri/target/release/DragonFly.exe "staging/DragonFly_standalone_v${VER}_x64.exe"
           cp src-tauri/target/release/bundle/nsis/*-setup.exe staging/
@@ -47,7 +54,7 @@ jobs:
           done
 
       - name: Upload release files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: dragonfly-windows
           path: staging/*
@@ -56,7 +63,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Install system dependencies
         run: |
@@ -71,7 +80,7 @@ jobs:
           echo "LIBCLANG_PATH=$(dirname $LIBCLANG)" >> $GITHUB_ENV
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -98,7 +107,7 @@ jobs:
           cp src-tauri/target/release/bundle/appimage/*.AppImage staging/
 
       - name: Upload release files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: dragonfly-linux
           path: staging/*
@@ -110,20 +119,21 @@ jobs:
       contents: write
     steps:
       - name: Download Windows files
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: dragonfly-windows
           path: release-files
 
       - name: Download Linux files
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: dragonfly-linux
           path: release-files
 
       - name: Attach files to GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           files: |
             release-files/*.exe
             release-files/*.msi
