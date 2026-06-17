@@ -140,4 +140,4 @@ jobs:
             release-files/*.deb
             release-files/*.rpm
             release-files/*.AppImage
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
