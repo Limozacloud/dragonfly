@@ -8,6 +8,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.2.1](https://github.com/Limozacloud/dragonfly/compare/dragonfly-v0.2.0...dragonfly-v0.2.1) (2026-06-17)
+
+
+### Bug Fixes
+
+* **ci:** fix release workflow tag pattern and action versions ([91f82e2](https://github.com/Limozacloud/dragonfly/commit/91f82e260c386c5825c5ad6397daea13fa599677))
+* **ci:** use GITHUB_TOKEN instead of missing RELEASE_TOKEN secret ([f4e492b](https://github.com/Limozacloud/dragonfly/commit/f4e492bb65261f441999da3cbb5b27f3d89d1482))
+
 ## [0.2.0](https://github.com/Limozacloud/dragonfly/compare/dragonfly-v0.1.17...dragonfly-v0.2.0) (2026-06-16)
 
 
