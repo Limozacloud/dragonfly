@@ -47,7 +47,7 @@
     "clsx": "^2.1.1",
     "i18next": "^26.0.0",
     "lucide-react": "^1.18.0",
-    "marked": "^17.0.3",
+    "marked": "^18.0.5",
     "mermaid": "^11.15.0",
     "pocketbase": "^0.27.0",
     "react": "^19.2.4",
