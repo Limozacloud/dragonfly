@@ -9,6 +9,12 @@ on:
       tag:
         description: 'Tag to attach binaries to (e.g. dragonfly-v0.2.0)'
         required: true
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag to attach binaries to (e.g. dragonfly-v0.2.0)'
+        required: true
+        type: string
 
 jobs:
   build-windows:
@@ -17,7 +23,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -42,7 +48,7 @@ jobs:
       - name: Collect release files
         shell: bash
         env:
-          TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           VER="${TAG#dragonfly-v}"
           mkdir -p staging
@@ -65,7 +71,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Install system dependencies
         run: |
@@ -133,7 +139,7 @@ jobs:
       - name: Attach files to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: |
             release-files/*.exe
             release-files/*.msi

@@ -20,3 +20,15 @@ jobs:
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  # release-please creates the tag/release using GITHUB_TOKEN, and GitHub does
+  # not let GITHUB_TOKEN-authored pushes trigger other workflows (loop
+  # protection). That means release.yml's `push: tags:` trigger never fires
+  # on its own — so call it directly as a reusable workflow instead.
+  build:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
