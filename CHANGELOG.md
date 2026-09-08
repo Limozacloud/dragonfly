@@ -8,6 +8,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.2.2](https://github.com/Limozacloud/dragonfly/compare/dragonfly-v0.2.1...dragonfly-v0.2.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **ci:** auto-trigger binary build after release-please creates a release ([b498bba](https://github.com/Limozacloud/dragonfly/commit/b498bbae28d75613d9dc8183450b2b589ca66e13))
+
 ## [0.2.1](https://github.com/Limozacloud/dragonfly/compare/dragonfly-v0.2.0...dragonfly-v0.2.1) (2026-09-08)
 
 
