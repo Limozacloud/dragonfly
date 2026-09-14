@@ -46,7 +46,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "i18next": "^26.0.0",
-    "lucide-react": "^1.21.0",
+    "lucide-react": "^1.44.0",
     "marked": "^18.0.12",
     "mermaid": "^11.17.2",
     "pocketbase": "^0.27.0",
